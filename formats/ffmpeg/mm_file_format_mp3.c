@@ -1155,13 +1155,10 @@ static int mmf_file_mp3_get_infomation (char *filename, AvFileContentInfo* pInfo
 {
 	MMFileIOHandle	*hFile;
 	unsigned char	header[256];
-	unsigned long   numOfFrames=0;
 	unsigned long   frameSamples=0;
 	unsigned char	*buf = NULL;	
 	unsigned char*	v2TagExistCheck = NULL;
-	unsigned int 		tempNumFrames = 0;
 	int 	readAmount = 0, readedDataLen = 0;
-  	unsigned long long 	tempduration = 0;
 	unsigned char	TagBuff[MP3TAGINFO_SIZE + TAGV1_SEEK_GAP];
 	unsigned char		TagV1ID[4] = { 0x54, 0x41, 0x47}; //TAG
 	int		tagHeaderPos = 0;
@@ -1397,6 +1394,26 @@ static int mmf_file_mp3_get_infomation (char *filename, AvFileContentInfo* pInfo
 
 	mm_file_id3tag_restore_content_info (pInfo);
 
+	if(pInfo->mpegVersion== 1)
+	{
+		if(pInfo->layer== 1)
+			frameSamples = MPEG_1_SIZE_LAYER_1;
+		else
+			frameSamples = MPEG_1_SIZE_LAYER_2_3;
+	}
+	else
+	{
+		if(pInfo->layer == 1)
+			frameSamples = MPEG_2_SIZE_LAYER_1;
+		else
+			frameSamples = MPEG_2_SIZE_LAYER_2_3;
+	}
+
+#if 0
+	unsigned long   numOfFrames=0;
+	unsigned long long 	tempduration = 0;
+	unsigned int 		tempNumFrames = 0;
+
 	if(pInfo->bVbr) 
 		numOfFrames = pInfo->frameNum*10;
 	else
@@ -1405,8 +1422,6 @@ static int mmf_file_mp3_get_infomation (char *filename, AvFileContentInfo* pInfo
 		-(pInfo->headerPos + (pInfo ->bV1tagFound ? MP3TAGINFO_SIZE : 0) ) )*10) / pInfo->frameSize;
   	}
 	tempNumFrames = (unsigned int)(numOfFrames/10);
-
-	
 
 	if((numOfFrames - tempNumFrames * 10 ) > 5)
 		numOfFrames = (numOfFrames/10) + 1;
@@ -1443,6 +1458,11 @@ static int mmf_file_mp3_get_infomation (char *filename, AvFileContentInfo* pInfo
 		tempduration = (tempduration*frameSamples)/pInfo->sampleRate;
 
 	pInfo->duration = tempduration;
+#else
+	int file_size_except_header = pInfo->fileLen - (pInfo->headerPos + (pInfo->bV1tagFound ? MP3TAGINFO_SIZE : 0));
+	pInfo->duration = ((double)file_size_except_header / (double)pInfo->frameSize) * (frameSamples * 1000 / pInfo->sampleRate);
+	debug_msg("duration from new algorithm : %lld", pInfo->duration);
+#endif
 
 	mmfile_close(hFile);
 	
