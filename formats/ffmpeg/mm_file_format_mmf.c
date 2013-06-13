@@ -2720,7 +2720,9 @@ _mmf_MALoad(	unsigned char* pbFile, unsigned int dFSize)
 /* check playback time			*/
 	if (sdResult != AV_MMF_FUNC_SUCCESS)		return sdResult;
 
+	#ifdef __MMFILE_TEST_MODE__
 	debug_msg ( "SUM %ld\n", psLoad_Info->dPlayTime * psLoad_Info->dTimeBase);
+	#endif
 
 	if ((psLoad_Info->dPlayTime * psLoad_Info->dTimeBase) <= AV_MMF_PLAY_TIME_MIN)
 	{

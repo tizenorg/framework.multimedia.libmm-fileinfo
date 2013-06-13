@@ -155,6 +155,10 @@ int MMFileFormatIsValidMP3 (const char *mmfileuri, int frameCnt)
 				}
 			}
 		}
+
+		/*If j is zero, this loop is infinite */
+		if (j ==0) j++;
+
 		i = i + j;
 	}
 
@@ -295,6 +299,9 @@ int MMFileFormatIsValidAAC (const char *mmfileuri)
 				goto exit;
 			}
 		}
+		/*If j is zero, this loop is infinite */
+		if (j ==0) j++;
+
 		i = i + j;
 	}
 
@@ -1124,7 +1131,6 @@ int MMFileFormatIsValidMatroska (const char *mmfileuri)
 		return ret;
 	}
 
-	debug_msg ( "[%s][%d]\n", __func__, __LINE__);
 	ret = mmfile_open (&fp, mmfileuri, MMFILE_RDONLY);
 	if (ret == MMFILE_UTIL_FAIL) {
 		debug_error ("error: mmfile_open\n");
@@ -1153,14 +1159,18 @@ int MMFileFormatIsValidMatroska (const char *mmfileuri)
 
 	/* ebml header? */
 	  if (buffer[0] != 0x1A || buffer[1] != 0x45 || buffer[2] != 0xDF || buffer[3] != 0xA3) {
+		#ifdef __MMFILE_TEST_MODE__
 		debug_msg ("This is not a EBML format\n");
+		#endif
 	    ret = 0;
 	    goto exit;
 	  }
 
 	  /* length of header */
 	    mmfile_read (fp, (unsigned char*)(&total), 1);
-	    debug_msg ("Initial total header size = [0x%x]\n", total);
+		#ifdef __MMFILE_TEST_MODE__
+		debug_msg ("Initial total header size = [0x%x]\n", total);
+		#endif
 
 	    while (size <= 8 && !(total & len_mask)) {
 	      debug_error ("This case can not be handled yet....")
@@ -1179,7 +1189,9 @@ int MMFileFormatIsValidMatroska (const char *mmfileuri)
 	      goto exit;
 	    }
 
+		#ifdef __MMFILE_TEST_MODE__
 	    debug_msg ("Final total header size = [%d]\n", total);
+		#endif
 
 	    if (buffer)
 	    	mmfile_free (buffer);
@@ -1188,9 +1200,11 @@ int MMFileFormatIsValidMatroska (const char *mmfileuri)
 
 	    for (n = 0; n <= total - sizeof (probe_data); n++) {
 	      if (!memcmp (&buffer[n], probe_data, sizeof (probe_data))) {
-	    	debug_msg ("String matroska found!!!\n");
-	        ret = 1;
-	        goto exit;
+			#ifdef __MMFILE_TEST_MODE__
+				debug_msg ("String matroska found!!!\n");
+			#endif
+			ret = 1;
+			goto exit;
 	      }
 	    }
 

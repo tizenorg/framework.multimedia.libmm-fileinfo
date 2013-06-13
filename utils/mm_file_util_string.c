@@ -83,8 +83,10 @@ char *mmfile_string_convert_debug (const char *str, unsigned int len,
 
     if (tmp)
     {
-        fprintf (stderr, "## DEBUG ## %p = g_convert (%p, %u, %p, %p, %p ,%p, %p, %u) by %s() %d\n",
+#ifdef __MMFILE_TEST_MODE__
+		debug_msg("## DEBUG ## %p = g_convert (%p, %u, %p, %p, %p ,%p, %p, %u) by %s() %d\n",
                           tmp, str, len, to_codeset, from_codeset, bytes_read, bytes_written, func, line);
+#endif
     }
 
     return tmp;
@@ -114,7 +116,9 @@ char *mmfile_strdup_debug (const char *str, const char *func, unsigned int line)
     temp = strdup (str);
 
     if (temp) {
-        fprintf (stderr, "## DEBUG ## %p = strdup (%p) by %s() %d\n", temp, str, func, line);
+#ifdef __MMFILE_TEST_MODE__
+        debug_msg("## DEBUG ## %p = strdup (%p) by %s() %d\n", temp, str, func, line);
+#endif
     }
 
     return temp; 
@@ -151,13 +155,18 @@ char *mmfile_string_convert (const char *str, unsigned int len,
                              unsigned int *bytes_written)
 {
 	char *result = NULL;
+	GError *err = NULL;
 
-	result = g_convert (str, len, to_codeset, from_codeset, bytes_read, bytes_written, NULL);  
+	result = g_convert (str, len, to_codeset, from_codeset, bytes_read, bytes_written, &err);
 
 	/*if converting failed, return duplicated source string.*/
 	if (result == NULL) {
 #ifdef __MMFILE_TEST_MODE__
 		debug_warning ("text encoding failed.[%s][%d]\n", str, len);
+		if(err != NULL) {
+			debug_warning ("Error msg [%s]", err->message);
+			g_error_free(err);
+		}
 #endif
 	}
 

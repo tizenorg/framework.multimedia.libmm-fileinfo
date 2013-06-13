@@ -753,12 +753,11 @@ int mm_file_create_tag_attrs(MMHandleType *tag_attrs, const char *filename)
 	}
 
 	ret = _get_tag_info (attrs, &src);
-
-#ifdef __MMFILE_TEST_MODE__
 	if (ret != MM_ERROR_NONE) {
+		mmf_attrs_free ((MMHandleType)attrs);
+		attrs = NULL;
 		debug_error ("failed to get tag: %s\n", filename);
 	}
-#endif
 
 	*tag_attrs = (MMHandleType)attrs;
 
@@ -844,7 +843,7 @@ int mm_file_create_content_attrs (MMHandleType *contents_attrs, const char *file
 	}
 
 	#ifdef CHECK_TIME
-	printf ("%s, %d, _load_dynamic_functions() = %lld\n", __func__, __LINE__, gettime() - ti);
+	debug_msg("_load_dynamic_functions() = %lld\n", gettime() - ti);
        #endif
 	 
 #endif
@@ -867,6 +866,8 @@ int mm_file_create_content_attrs (MMHandleType *contents_attrs, const char *file
 	parse.type = MM_FILE_PARSE_TYPE_ALL;
 	ret = _get_contents_info (attrs, &src, &parse);
 	if (ret != MM_ERROR_NONE) {
+		mmf_attrs_free ((MMHandleType)attrs);
+		attrs = NULL;
 		debug_error ("failed to get contents: %s\n", filename);
 	}
 
@@ -882,7 +883,7 @@ int mm_file_create_content_attrs (MMHandleType *contents_attrs, const char *file
 	_unload_dynamic_functions (&func_handle);
 
 	#ifdef CHECK_TIME
-	printf ("%s, %d, _unload_dynamic_functions() = %lld\n", __func__, __LINE__, gettime() - ti);
+	debug_msg("_unload_dynamic_functions() = %lld\n", gettime() - ti);
 	#endif
 
 #endif
@@ -931,6 +932,11 @@ int mm_file_create_tag_attrs_from_memory (MMHandleType *tag_attrs, const void *d
 
 	parse.type = MM_FILE_PARSE_TYPE_ALL;
 	ret = _get_tag_info (attrs, &src);
+	if (ret != MM_ERROR_NONE) {
+		mmf_attrs_free ((MMHandleType)attrs);
+		attrs = NULL;
+		debug_error ("failed to get tag");
+	}
 
 	*tag_attrs = (MMHandleType)attrs;
 
@@ -982,6 +988,8 @@ int mm_file_create_content_attrs_from_memory (MMHandleType *contents_attrs, cons
 	parse.type = MM_FILE_PARSE_TYPE_ALL;
 	ret = _get_contents_info (attrs, &src, &parse);
 	if (ret != MM_ERROR_NONE) {
+		mmf_attrs_free ((MMHandleType)attrs);
+		attrs = NULL;
 		debug_error ("failed to get contents");
 	}
 
@@ -1116,6 +1124,8 @@ int mm_file_create_content_attrs_simple(MMHandleType *contents_attrs, const char
 	parse.type = MM_FILE_PARSE_TYPE_NORMAL;
 	ret = _get_contents_info (attrs, &src, &parse);
 	if (ret != MM_ERROR_NONE) {
+		mmf_attrs_free ((MMHandleType)attrs);
+		attrs = NULL;
 		debug_error ("failed to get contents: %s\n", filename);
 	}
 

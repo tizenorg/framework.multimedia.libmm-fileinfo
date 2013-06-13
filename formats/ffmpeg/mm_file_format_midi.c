@@ -532,7 +532,7 @@ __AvGetMidiDuration(char* szFileName, MIDI_INFO_SIMPLE *info)
 	if ( szFileName == NULL ||  info == NULL)
 		return -1;
 
-	// printf ("URI: %s\n", szFileName);
+	// debug_msg ("URI: %s\n", szFileName);
 	/*open*/
 	ret = mmfile_open (&hFile, szFileName, MMFILE_RDONLY);
 	if (ret == MMFILE_UTIL_FAIL) {
@@ -823,7 +823,7 @@ __AvMidGetTrackTime(PMIDINFO pI, UINT32 dTrack)
 		dTemp = (UINT32)pMt->pbBase[pMt->dOffset++];
 		dTime = (dTime << 7) + (dTemp & 0x7f);
 	} while (dTemp >= 0x80);
-	//printf("dTime is %d\n", dTime);
+	//debug_msg("dTime is %d\n", dTime);
 	pMt->sdTicks += dTime;
 
 	return (0);
@@ -1340,7 +1340,7 @@ __AvGetSizeOfFileInfo(PMIDINFO pI)
 	}
 	if ((pI->sdDataEndTime >> 10) <= MINIMUM_LENGTH) return (AvSMW_ERROR_SHORT_LENGTH);
 
-	// printf("__AvGetSizeOfFileInfo/Done\n");
+	// debug_msg("__AvGetSizeOfFileInfo/Done\n");
 
 	return pI->sdDataEndTime;
 }
@@ -1368,7 +1368,7 @@ __AvCheckSizeOfMidFile(UINT8* src_fp, UINT32 dFsize)
 	UINT32	dNumOfTracks;
 	UINT32	i;
 	UINT8 *fp = src_fp;
-	// printf ("input param: %p, %d\n", fp , dFsize);
+	// debug_msg ("input param: %p, %d\n", fp , dFsize);
 	while (dFsize >= 22)
 	{
 		dTemp = ((UINT32)fp[0] << 24) + ((UINT32)fp[1] << 16) +
@@ -1378,7 +1378,7 @@ __AvCheckSizeOfMidFile(UINT8* src_fp, UINT32 dFsize)
 		dFsize --;
 	}
 	
-	// printf("__AvCheckSizeOfMidFile(): MThd Position is dFsize(%d)\n", dFsize);
+	// debug_msg("__AvCheckSizeOfMidFile(): MThd Position is dFsize(%d)\n", dFsize);
 	
 	if (dFsize < 22) 
 	{
@@ -1511,7 +1511,7 @@ __AvParseSkipXmf2Mid(UINT8* pbFile, UINT32 dFSize)
 		}
 	}
 
-	// printf("__AvParseSkipForXMF : skip value(%d)\n", skipVal);
+	// debug_msg("__AvParseSkipForXMF : skip value(%d)\n", skipVal);
 	
 	return skipVal;
 }
