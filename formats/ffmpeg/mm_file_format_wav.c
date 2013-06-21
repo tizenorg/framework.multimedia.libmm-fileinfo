@@ -29,8 +29,6 @@
 #include "mm_file_format_private.h"
 #include "mm_file_format_wav.h"
 
-#undef MIN
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 /**
  * Wave File Header.
@@ -268,10 +266,15 @@ int mmfile_format_read_stream_wav (MMFileFormatContext *formatContext)
 		mmfile_close (fp);
 	}
 
-	filesize = MIN(waveinfo->size, filesize);
 	formatContext->privateFormatData = waveinfo;
 
-	formatContext->duration = (int)((((float)filesize - MMF_FILE_WAVE_HEADER_LEN) / (float)(waveinfo->byte_rate)) * 1000.0F);
+	if(waveinfo->size > filesize) {
+		/*Wrong information*/
+		formatContext->duration = (int)((((float)filesize - MMF_FILE_WAVE_HEADER_LEN) / (float)(waveinfo->byte_rate)) * 1000.0F);
+	} else {
+		formatContext->duration = (int)(((float)(waveinfo->size) / (float)(waveinfo->byte_rate)) * 1000.0F);
+	}
+
 	formatContext->audioTotalTrackNum = 1;
 	formatContext->nbStreams = 1;
 	formatContext->streams[MMFILE_AUDIO_STREAM] = mmfile_malloc (sizeof(MMFileFormatStream));
