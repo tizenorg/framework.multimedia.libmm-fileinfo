@@ -177,8 +177,7 @@ HANDLING_DRM_DIVX:
 			#ifdef __MMFILE_TEST_MODE__
 			debug_msg ("FFMPEG video codec id: 0x%08X\n", pFormatCtx->streams[i]->codec->codec_id);
 			#endif
-			if (ConvertVideoCodecEnum(pFormatCtx->streams[i]->codec->codec_id) != MM_VIDEO_CODEC_NONE)
-				formatContext->videoTotalTrackNum += 1;
+			formatContext->videoTotalTrackNum += 1;
 		}
 		if (pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
 			#ifdef __MMFILE_TEST_MODE__
