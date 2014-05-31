@@ -1,0 +1,12 @@
+<manifest>
+        <define>
+                <domain name="mm-fileinfo"/>
+        </define>
+	<request>
+		<domain name="_" />
+	</request>
+        <assign>
+                <filesystem path="/usr/bin/mm_file_test" label="mm_fileinfo" exec_label="mm_fileinfo" />
+        </assign>
+</manifest>
+

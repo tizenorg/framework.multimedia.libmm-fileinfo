@@ -1,0 +1,16 @@
+Fileinfo module provides APIs to extract media property information and meta data from media content. These values can be used to display detailed information of the media content without playing it.
+
+For convenience, the file module provides an additional two APIs (mm_file_get_content_attr_from_memory, mm_file_get_tag_attr_from_memory) which manipulate the source data from memory instead of the file. They act the same as normal APIs (mm_file_get_content_attr, mm_file_get_tag_attr).
+
+For performance, the file module provides an additional two APIs (mm_file_get_stream_info, mm_file_get_content_attr_simple) which extract the audio/video track count without time consuming operations.
+
+The following are supported functions
+
+int mm_file_get_content_attr (MMHandleType *attrs, const char *filename) 
+int mm_file_get_content_attr_from_memory (MMHandleType *attrs, const void *data, unsigned int size, int format) 
+int mm_file_get_content_attr_simple (MMHandleType *attrs, const char *filename) 
+int mm_file_free_content_attr (MMHandleType attrs) 
+int mm_file_get_tag_attr ((MMHandleType *attrs, const char *filename) 
+int mm_file_get_tag_attr_from_memory ((MMHandleType *attrs, const void *data, unsigned int size, int format) 
+int mm_file_free_tag_attr ((MMHandleType attrs) 
+int mm_file_get_stream_info (const char *filename, int *audio_stream_num, int *video_stream_num) 
