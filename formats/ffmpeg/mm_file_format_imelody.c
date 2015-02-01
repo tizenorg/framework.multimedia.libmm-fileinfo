@@ -416,14 +416,20 @@ static int __get_imelody_tag (const char *uriname, tMMFileImelodyTagInfo *tags)
             {
                 if (!strncmp (imy_key_buffer, "NAME", 4))
                 {
+                    if(tags->title != NULL)
+						mmfile_free(tags->title);
                     tags->title = mmfile_strdup (imy_value_buffer);
                 }
                 else if (!strncmp (imy_key_buffer, "COMPOSER", 8))
                 {
+                    if(tags->composer != NULL)
+						mmfile_free(tags->composer);
                     tags->composer = mmfile_strdup (imy_value_buffer);
                 }
                 else if (!strncmp (imy_key_buffer, "COPYRIGHT", 9))
                 {
+                    if(tags->copyright != NULL)
+						mmfile_free(tags->copyright);
                     tags->copyright = mmfile_strdup (imy_value_buffer);
                 }
                                 

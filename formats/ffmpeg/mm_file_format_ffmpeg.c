@@ -24,23 +24,17 @@
 
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
+#include <libavutil/samplefmt.h>
 #ifdef __MMFILE_FFMPEG_V085__
 #include <libswscale/swscale.h>
 #endif
 #include <mm_error.h>
 #include <mm_types.h>
 
-#ifdef DRM_SUPPORT
-#include <drm_client.h>
-#endif
 #include "mm_debug.h"
 #include "mm_file_formats.h"
 #include "mm_file_utils.h"
 #include "mm_file_format_ffmpeg.h"
-
-#ifdef DRM_SUPPORT
-#include "mm_file_format_ffmpeg_drm.h"
-#endif
 
 #include "mm_file_format_ffmpeg_mem.h"
 #include <sys/time.h>
@@ -59,7 +53,7 @@ static void _dump_av_packet (AVPacket *pkt);
 #endif
 
 static int	_get_video_fps (int frame_cnt, int duration, AVRational r_frame_rate, int is_roundup);
-static int	_get_first_good_video_frame (AVFormatContext *pFormatCtx, AVCodecContext *pCodecCtx, int videoStream, AVFrame **pFrame);
+static int	_get_first_good_video_frame (AVFormatContext *pFormatCtx, AVCodecContext *pCodecCtx, int videoStream, AVFrame **pFrame, int cdis);
 
 static int	ConvertVideoCodecEnum (int AVVideoCodecID);
 static int	ConvertAudioCodecEnum (int AVAudioCodecID);
@@ -80,9 +74,6 @@ int mmfile_format_open_ffmpg (MMFileFormatContext *formatContext)
 	AVInputFormat       *grab_iformat = NULL;
 	int ret = 0;
 	int i;
-#ifdef DRM_SUPPORT
-	drm_content_info_s contentInfo = {0,};
-#endif
 	char ffmpegFormatName[MMFILE_FILE_FMT_MAX_LEN] = {0,};
 	char mimeType[MMFILE_MIMETYPE_MAX_LEN] = {0,};
 
@@ -151,23 +142,16 @@ int mmfile_format_open_ffmpg (MMFileFormatContext *formatContext)
 	}
 	
 	if (formatContext->filesrc->type  == MM_FILE_SRC_TYPE_FILE) {
-
-		if (formatContext->isdrm == MM_FILE_DRM_OMA) {
-			debug_error ("error: drm content\n");
-			goto exception;
-		} else {
-HANDLING_DRM_DIVX:
 #ifdef __MMFILE_FFMPEG_V085__
-			ret = avformat_open_input(&pFormatCtx, formatContext->filesrc->file.path, NULL, NULL);
+		ret = avformat_open_input(&pFormatCtx, formatContext->filesrc->file.path, NULL, NULL);
 #else
-			ret = av_open_input_file(&pFormatCtx, formatContext->filesrc->file.path, NULL, 0, NULL);
+		ret = av_open_input_file(&pFormatCtx, formatContext->filesrc->file.path, NULL, 0, NULL);
 #endif
-			if (ret < 0) {
-				debug_error("error: cannot open %s %d\n", formatContext->filesrc->file.path, ret);
-				goto exception;
-			}
-			formatContext->privateFormatData = pFormatCtx;
+		if (ret < 0) {
+			debug_error("error: cannot open %s %d\n", formatContext->filesrc->file.path, ret);
+			goto exception;
 		}
+		formatContext->privateFormatData = pFormatCtx;
 	}
 
 	if (!pFormatCtx || !(pFormatCtx->nb_streams > 0)) {
@@ -237,6 +221,25 @@ exception: /* fail to get content information */
 	return MMFILE_FORMAT_FAIL;
 }
 
+static bool __check_uhqa(int sample_rate,  enum AVSampleFormat sample_fmt_info)
+{
+	bool ret = FALSE;
+
+#ifdef __MMFILE_TEST_MODE__
+	debug_error("[sample rate %d, sample format %d]", sample_rate, sample_fmt_info);
+#endif
+
+	if ((sample_rate >= 44100) && (sample_fmt_info >= AV_SAMPLE_FMT_S32)) {
+#ifdef __MMFILE_TEST_MODE__
+		debug_msg("UHQA CONTENT");
+#endif
+		ret = TRUE;
+	} else {
+		ret = FALSE;
+	}
+
+	return ret;
+}
 
 EXPORT_API
 int mmfile_format_read_stream_ffmpg (MMFileFormatContext * formatContext)
@@ -366,6 +369,8 @@ int mmfile_format_read_stream_ffmpg (MMFileFormatContext * formatContext)
 					audioStream->bitRate		= pAudioCodecCtx->bit_rate;
 					audioStream->nbChannel		= pAudioCodecCtx->channels;
 					audioStream->samplePerSec	= pAudioCodecCtx->sample_rate;
+					audioStream->bitPerSample = pAudioCodecCtx->bits_per_raw_sample;
+					audioStream->is_uhqa = __check_uhqa(audioStream->samplePerSec, pFormatCtx->streams[i]->codec->sample_fmt);
 				}
 			}
 		}
@@ -659,6 +664,11 @@ int mmfile_format_read_frame_ffmpg  (MMFileFormatContext *formatContext, unsigne
 		return MMFILE_FORMAT_FAIL;
 	}
 
+	if (formatContext->isdrm == MM_FILE_DRM_PROTECTED) {
+		debug_error ("This is protected drm file\n");
+		return MMFILE_FORMAT_FAIL;
+	}
+
 	pFormatCtx = formatContext->privateFormatData;
 
 	if (formatContext->videoStreamId != -1) {
@@ -693,6 +703,11 @@ int mmfile_format_read_frame_ffmpg  (MMFileFormatContext *formatContext, unsigne
 		/*set workaround bug flag*/
 		pVideoCodecCtx->workaround_bugs = FF_BUG_AUTODETECT;
 #ifdef __MMFILE_FFMPEG_V100__
+		/* this is solution for PLM issue P13091703323 */
+		/* If using thread when decoding frame, the result of decoding is not always same. 
+		    Thumbnail of video content is different with original file when copying file. */
+		pVideoCodecCtx->thread_type = 0;
+		pVideoCodecCtx->thread_count = 0;
 		ret = avcodec_open2 (pVideoCodecCtx, pVideoCodec, NULL);
 #else
 		ret = avcodec_open (pVideoCodecCtx, pVideoCodec);
@@ -712,7 +727,7 @@ int mmfile_format_read_frame_ffmpg  (MMFileFormatContext *formatContext, unsigne
 
 		/* search & decode */
 		// seek_ts = formatContext->duration > _SHORT_MEDIA_LIMIT ? seek_ts : 0;	/*if short media, seek first key frame*/
-		ret = _get_first_good_video_frame (pFormatCtx, pVideoCodecCtx, formatContext->videoStreamId, &pFrame);
+		ret = _get_first_good_video_frame (pFormatCtx, pVideoCodecCtx, formatContext->videoStreamId, &pFrame, formatContext->cdis);
 		if ( ret != MMFILE_FORMAT_SUCCESS ) {
 			debug_error ("error: get key frame\n");
 			ret = MMFILE_FORMAT_FAIL;
@@ -988,7 +1003,7 @@ static void _dump_av_packet (AVPacket *pkt)
 }
 #endif
 
-static int _get_first_good_video_frame (AVFormatContext *pFormatCtx, AVCodecContext *pCodecCtx, int videoStream, AVFrame **pFrame)
+static int _get_first_good_video_frame (AVFormatContext *pFormatCtx, AVCodecContext *pCodecCtx, int videoStream, AVFrame **pFrame, int cdis)
 {
 	// AVStream *st = NULL;
 	AVPacket pkt;
@@ -1007,10 +1022,16 @@ static int _get_first_good_video_frame (AVFormatContext *pFormatCtx, AVCodecCont
 #ifdef MMFILE_FORMAT_DEBUG_DUMP
 	char pgm_name[256] = {0,};
 #endif
+	int key_search_limit = 0;
+	int frame_search_limit = 0;
 
-#define	_RETRY_SEARCH_LIMIT		150
+#define	_RETRY_SEARCH_LIMIT		75
 #define	_KEY_SEARCH_LIMIT		(_RETRY_SEARCH_LIMIT*2)		/*2 = 1 read. some frame need to read one more*/
-#define	_FRAME_SEARCH_LIMIT		1000
+#define	_FRAME_SEARCH_LIMIT		500
+
+#define	_RETRY_SEARCH_LIMIT_CDIS		10
+#define	_KEY_SEARCH_LIMIT_CDIS		(_RETRY_SEARCH_LIMIT*2)		/*2 = 1 read. some frame need to read one more*/
+#define	_FRAME_SEARCH_LIMIT_CDIS		10
 
 	first_frame = avcodec_alloc_frame ();
 	tmp_frame = avcodec_alloc_frame ();
@@ -1032,7 +1053,15 @@ static int _get_first_good_video_frame (AVFormatContext *pFormatCtx, AVCodecCont
 	pCodecCtx->hurry_up = 1;
 #endif
 
-	for(i = 0, v = 0, key_detected = 0, frame = first_frame; i < _KEY_SEARCH_LIMIT && v < _FRAME_SEARCH_LIMIT;) {
+	if (cdis == 1) {
+		key_search_limit = _KEY_SEARCH_LIMIT_CDIS;
+		frame_search_limit = _FRAME_SEARCH_LIMIT_CDIS;
+	} else {
+		key_search_limit = _KEY_SEARCH_LIMIT;
+		frame_search_limit = _FRAME_SEARCH_LIMIT;
+	}
+
+	for(i = 0, v = 0, key_detected = 0, frame = first_frame; i < key_search_limit && v < frame_search_limit;) {
 		av_init_packet (&pkt);
 		got_picture = 0;
 

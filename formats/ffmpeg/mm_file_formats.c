@@ -23,11 +23,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#ifdef DRM_SUPPORT
-#include <drm_client.h>
-#endif
-
-
 #include "mm_debug.h"
 #include "mm_file_format_private.h"
 #include "mm_file_utils.h"
@@ -170,60 +165,32 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 			return MMFILE_FORMAT_FAIL;		/*invalid file name*/
 		}
 
-#ifdef DRM_SUPPORT
-		/**
-		 * Make URI name with file name
-		 */
-		drm_bool_type_e res = DRM_TRUE;
-		drm_file_type_e file_type = DRM_TYPE_UNDEFINED;
-		int ret = 0;
-		bool is_drm = FALSE;
-
-		ret = drm_is_drm_file (fileSrc->file.path, &res);
-		if (ret == DRM_RETURN_SUCCESS && DRM_TRUE == res)
-		{
-			ret = drm_get_file_type(fileSrc->file.path, &file_type);
-			if((ret == DRM_RETURN_SUCCESS) && ((file_type == DRM_TYPE_OMA_V1) ||(file_type == DRM_TYPE_OMA_V2)))
-			{
-				is_drm = TRUE;
-			}
+	
+		*isdrm = MM_FILE_DRM_NONE;
+#ifdef __MMFILE_MMAP_MODE__
+		*urifilename = mmfile_malloc (MMFILE_MMAP_URI_LEN + filename_len + 1);
+		if (!*urifilename) {
+			debug_error ("error: mmfile_malloc uriname\n");
+			return MMFILE_FORMAT_FAIL;
 		}
 
-		if (is_drm)
-		{
-			*isdrm = MM_FILE_DRM_OMA;
-			debug_error ("OMA DRM detected. Not Support DRM Content\n");
-			return MMFILE_FORMAT_FAIL;		/*Not Support DRM Content*/
-		} 
-		else 
-#endif // DRM_SUPPORT			
-		{
-			*isdrm = MM_FILE_DRM_NONE;
-#ifdef __MMFILE_MMAP_MODE__
-			*urifilename = mmfile_malloc (MMFILE_MMAP_URI_LEN + filename_len + 1);
-			if (!*urifilename) {
-				debug_error ("error: mmfile_malloc uriname\n");
-				return MMFILE_FORMAT_FAIL;
-			}
-
-			memset (*urifilename, 0x00, MMFILE_MMAP_URI_LEN + filename_len + 1);
-			strncpy (*urifilename, MMFILE_MMAP_URI, MMFILE_MMAP_URI_LEN);
-			strncat (*urifilename, fileName, filename_len);
-			(*urifilename)[MMFILE_MMAP_URI_LEN + filename_len] = '\0';
+		memset (*urifilename, 0x00, MMFILE_MMAP_URI_LEN + filename_len + 1);
+		strncpy (*urifilename, MMFILE_MMAP_URI, MMFILE_MMAP_URI_LEN);
+		strncat (*urifilename, fileName, filename_len);
+		(*urifilename)[MMFILE_MMAP_URI_LEN + filename_len] = '\0';
 
 #else
-			*urifilename = mmfile_malloc (MMFILE_FILE_URI_LEN + filename_len + 1);
-			if (!*urifilename) {
-				debug_error ("error: mmfile_malloc uriname\n");
-				return MMFILE_FORMAT_FAIL;
-			}
-
-			memset (*urifilename, 0x00, MMFILE_FILE_URI_LEN + filename_len + 1);
-			strncpy (*urifilename, MMFILE_FILE_URI, MMFILE_FILE_URI_LEN+1);
-			strncat (*urifilename, fileName, filename_len);
-			(*urifilename)[MMFILE_FILE_URI_LEN + filename_len] = '\0';
-#endif
+		*urifilename = mmfile_malloc (MMFILE_FILE_URI_LEN + filename_len + 1);
+		if (!*urifilename) {
+			debug_error ("error: mmfile_malloc uriname\n");
+			return MMFILE_FORMAT_FAIL;
 		}
+
+		memset (*urifilename, 0x00, MMFILE_FILE_URI_LEN + filename_len + 1);
+		strncpy (*urifilename, MMFILE_FILE_URI, MMFILE_FILE_URI_LEN+1);
+		strncat (*urifilename, fileName, filename_len);
+		(*urifilename)[MMFILE_FILE_URI_LEN + filename_len] = '\0';
+#endif
 
 		///////////////////////////////////////////////////////////////////////
 		//                 Check File format                                 //
@@ -867,7 +834,8 @@ int mmfile_format_open (MMFileFormatContext **formatContext, MMFileSourceType *f
 	if (MMFILE_FORMAT_FAIL == ret) {
 		debug_error ("error: Try other formats\n");
 		ret = MMFILE_FORMAT_FAIL;
-		goto find_valid_handler;
+//		goto find_valid_handler;
+		goto exception;
 	}
 
 	*formatContext = formatObject;

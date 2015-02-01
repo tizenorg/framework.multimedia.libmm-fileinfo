@@ -98,6 +98,7 @@ typedef struct _ContentContext {
 	int audio_samplerate;
 	int audio_track_id;
 	int audio_track_num;
+	int audio_bitpersample;
 	mmfile_value_t thumbnail;
 }ContentContext_t;
 
@@ -252,6 +253,7 @@ static int mmfile_get_file_infomation (void *data, void* user_data, bool file_te
 									MM_FILE_CONTENT_AUDIO_CHANNELS, &ccontent.audio_channel,
 									MM_FILE_CONTENT_AUDIO_TRACK_INDEX, &ccontent.audio_track_id,
 									MM_FILE_CONTENT_AUDIO_TRACK_COUNT, &ccontent.audio_track_num,
+									MM_FILE_CONTENT_AUDIO_BITPERSAMPLE, &ccontent.audio_bitpersample,
 									NULL);
 
 			if(ret != MM_ERROR_NONE) {
@@ -265,6 +267,7 @@ static int mmfile_get_file_infomation (void *data, void* user_data, bool file_te
 				printf("# audio channel: %d\n", ccontent.audio_channel);
 				printf("# audio track id: %d\n", ccontent.audio_track_id);
 				printf("# audio track num: %d\n", ccontent.audio_track_num);
+				printf("# audio bit per sample: %d\n", ccontent.audio_bitpersample);
 			}
 		}
 	
@@ -354,7 +357,7 @@ static int mmfile_get_file_infomation (void *data, void* user_data, bool file_te
 				fclose (msg_tmp_fp);
 				msg_tmp_fp = NULL;
 			}
-
+			mm_file_destroy_tag_attrs(tag_attrs);
 			return -1;
 		}
 

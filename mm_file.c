@@ -85,6 +85,7 @@ typedef struct {
 	int	type;
 	int	audio_track_num;
 	int	video_track_num;
+	bool is_uhqa;
 } MMFILE_PARSE_INFO;
 
 typedef struct {
@@ -143,6 +144,7 @@ static mmf_attrs_construct_info_t g_content_attrs[] = {
 	{"content-audio-samplerate",	MMF_VALUE_TYPE_INT,		MM_ATTRS_FLAG_RW, (void *)0},
 	{"content-audio-track-index",	MMF_VALUE_TYPE_INT,		MM_ATTRS_FLAG_RW, (void *)0},
 	{"content-audio-track-count",	MMF_VALUE_TYPE_INT,		MM_ATTRS_FLAG_RW, (void *)0},
+	{"content-audio-bitpersample",	MMF_VALUE_TYPE_INT,		MM_ATTRS_FLAG_RW, (void *)0},
 };
 
 #ifdef __MMFILE_DYN_LOADING__
@@ -370,6 +372,7 @@ _info_set_attr_media (mmf_attrs_t *attrs, MMFileFormatContext *formatContext)
 			mm_attrs_set_int_by_name (hattrs, MM_FILE_CONTENT_AUDIO_CHANNELS, audioStream->nbChannel);
 			mm_attrs_set_int_by_name (hattrs, MM_FILE_CONTENT_AUDIO_BITRATE, audioStream->bitRate);
 			mm_attrs_set_int_by_name (hattrs, MM_FILE_CONTENT_AUDIO_SAMPLERATE, audioStream->samplePerSec);
+			mm_attrs_set_int_by_name (hattrs, MM_FILE_CONTENT_AUDIO_BITPERSAMPLE, audioStream->bitPerSample);
 		}	
 	} 
 	else 
@@ -420,8 +423,18 @@ _get_contents_info (mmf_attrs_t *attrs, MMFileSourceType *src, MMFILE_PARSE_INFO
 			goto exception;
 		}
 
+		/* check uhqa content*/
+		if (parse->is_uhqa = formatContext->streams[MMFILE_AUDIO_STREAM] != NULL)
+			parse->is_uhqa = formatContext->streams[MMFILE_AUDIO_STREAM]->is_uhqa;
+
 		if (parse->type >= MM_FILE_PARSE_TYPE_ALL) {
 			if (formatContext->videoTotalTrackNum > 0) {
+
+				if (parse->type != MM_FILE_PARSE_TYPE_SAFE) {
+					if (formatContext->formatType == MM_FILE_FORMAT_3GP ||formatContext->formatType == MM_FILE_FORMAT_MP4) {
+						MMFileUtilGetMetaDataFromMP4 (formatContext);
+					}
+				}
 				MMFileFormatStream *videoStream = formatContext->streams[MMFILE_VIDEO_STREAM];
 				unsigned int timestamp = _SEEK_POINT_;
 
@@ -1161,11 +1174,14 @@ int mm_file_create_content_attrs_simple(MMHandleType *contents_attrs, const char
 		return MM_ERROR_FILE_INTERNAL;
 	}
 #endif
-	if (filename == NULL) { 
-		return MM_ERROR_INVALID_ARGUMENT;
+	if (filename == NULL) {
+		ret = MM_ERROR_INVALID_ARGUMENT;
+		goto END;
 	} else {
-		if (strlen (filename) == 0)
-			return MM_ERROR_INVALID_ARGUMENT;
+		if (strlen (filename) == 0) {
+			ret = MM_ERROR_INVALID_ARGUMENT;
+			goto END;
+		}
 	}
 
 	/*set source file infomation*/
@@ -1372,4 +1388,72 @@ exception:
 	if (formatFuncHandle) dlclose (formatFuncHandle);
 
 	return MM_ERROR_FILE_INTERNAL;
+}
+
+EXPORT_API
+int mm_file_check_uhqa(const char* filename, bool *is_uhqa)
+{
+	mmf_attrs_t *attrs = NULL;
+	MMFileSourceType src = {0,};
+	MMFILE_PARSE_INFO parse = {0,};
+	int ret = 0;
+
+#ifdef __MMFILE_DYN_LOADING__
+	MMFILE_FUNC_HANDLE func_handle;
+
+	ret = _load_dynamic_functions (&func_handle);
+	if (ret == 0) {
+		debug_error ("load library error\n");
+		return MM_ERROR_FILE_INTERNAL;
+	}
+#endif
+	if (filename == NULL) {
+		ret = MM_ERROR_INVALID_ARGUMENT;
+		goto END;
+	} else {
+		if (strlen (filename) == 0) {
+			ret = MM_ERROR_INVALID_ARGUMENT;
+			goto END;
+		}
+	}
+
+	/*set source file infomation*/
+	MM_FILE_SET_MEDIA_FILE_SRC (src, filename);
+
+	ret = _is_file_exist (filename);
+	if (!ret) {
+		ret = MM_ERROR_FILE_NOT_FOUND;
+		goto END;
+	}
+
+	/*set attrs*/
+	attrs = (mmf_attrs_t *) mmf_attrs_new_from_data ("content", g_content_attrs, ARRAY_SIZE (g_content_attrs), NULL, NULL);
+	if (!attrs) {
+		debug_error ("attribute internal error.\n");
+		ret = MM_ERROR_FILE_INTERNAL;
+		goto END;
+	}
+
+	parse.type = MM_FILE_PARSE_TYPE_NORMAL;
+	ret = _get_contents_info (attrs, &src, &parse);
+	if (ret == MM_ERROR_NONE) {
+		*is_uhqa = parse.is_uhqa;
+	} else {
+		debug_error ("_get_contents_info failed\n");
+		*is_uhqa = FALSE;
+	}
+
+	mmf_attrs_free ((MMHandleType)attrs);
+	attrs = NULL;
+
+END:
+#ifdef __MMFILE_DYN_LOADING__
+	_unload_dynamic_functions (&func_handle);
+#endif
+
+#ifdef __MMFILE_TEST_MODE__
+	debug_fleave();
+#endif
+
+	return ret;
 }

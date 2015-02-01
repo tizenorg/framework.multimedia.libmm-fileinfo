@@ -69,6 +69,7 @@ extern "C" {
 #define MM_FILE_CONTENT_AUDIO_SAMPLERATE	"content-audio-samplerate" /**< Sampling rate of audio stream */
 #define MM_FILE_CONTENT_AUDIO_TRACK_INDEX	"content-audio-track-index"	/**< Current stream of audio */
 #define MM_FILE_CONTENT_AUDIO_TRACK_COUNT	"content-audio-track-count"/**< Number of audio streams */
+#define MM_FILE_CONTENT_AUDIO_BITPERSAMPLE	"content-audio-bitpersample" /**< Bit per sample of audio stream */
 
 /**
  * tag attributes.
@@ -588,6 +589,8 @@ int mm_file_get_synclyrics_info(MMHandleType tag_attrs, int index, unsigned long
 int mm_file_get_video_frame(const char* path, double timestamp, bool is_accurate, unsigned char **frame, int *size, int *width, int *height);
 
 int mm_file_get_video_frame_from_memory(const void *data, unsigned int datasize, double timestamp, bool is_accurate, unsigned char **frame, int *size, int *width, int *height);
+
+int mm_file_check_uhqa(const char* filename, bool *is_uhqa);
 
 /**
 	@}

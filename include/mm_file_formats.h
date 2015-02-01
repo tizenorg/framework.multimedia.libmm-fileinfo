@@ -55,9 +55,10 @@ enum {
 };
 
 enum {
-	MM_FILE_DRM_NONE = 0,	/*not drm file*/
-	MM_FILE_DRM_OMA,		/*oma drm*/
-	MM_FILE_DRM_DIVX,		/*divx drm*/
+	MM_FILE_DRM_NONE = 0,		/*not drm file*/
+	MM_FILE_DRM_OMA,			/*oma drm*/
+	MM_FILE_DRM_DIVX,			/*divx drm*/
+	MM_FILE_DRM_PROTECTED,	/*This is drm file but not oma or divx*/
 };
 
 
@@ -86,6 +87,8 @@ typedef struct _mmfilesteam {
 	int	height;
 	int	nbChannel;
 	int	samplePerSec;
+	int 	bitPerSample;
+	bool is_uhqa;
 } MMFileFormatStream;
 
 typedef struct _mmfileformatframe {

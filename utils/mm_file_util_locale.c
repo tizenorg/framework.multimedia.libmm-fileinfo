@@ -80,6 +80,7 @@ static int _MMFileUtilGetLocaleindex()
 {
 	int index = MMFILE_LANGUAGE_ENGLISH;
 	char *lang = NULL;
+	char *con_iso = NULL;
 
 	char *china_prefix = "zh";
 	char *eng_prefix = "en";
@@ -89,6 +90,8 @@ static int _MMFileUtilGetLocaleindex()
 	char *taiwan_lang = "zh_TW";
 	char *jpn_lang = "ja_JP";
 
+
+	con_iso = vconf_get_str(VCONFKEY_CSC_COUNTRY_ISO);
 	lang = vconf_get_str(VCONFKEY_LANGSET);
 
 	if (lang != NULL) {
@@ -102,9 +105,24 @@ static int _MMFileUtilGetLocaleindex()
 				index = MMFILE_LANGUAGE_TRA_CHINA;
 			}
 		} else if (strncmp(lang, eng_prefix, strlen(eng_prefix)) == 0) {
-			/* This case is selected language is engilish*/
+			/* This case is selected language is engilish
+			     In case of engilish, the character set is related with region of target binary */
 			debug_msg("[%s]character set is engilish", lang);
-			index = MMFILE_LANGUAGE_ENGLISH;
+			if (con_iso!=NULL) {
+				if (strncmp(con_iso, "CN", strlen("CN")) == 0) {
+					debug_msg("region of this target is China.");
+					index = MMFILE_LANGUAGE_SIM_CHINA;
+				} else if ((strncmp(con_iso, "TW", strlen("TW")) == 0) || (strncmp(con_iso, "HK", strlen("HK")) == 0)) {
+					debug_msg("region of this target is Hong kong or Twian.");
+					index = MMFILE_LANGUAGE_TRA_CHINA;
+				} else {
+					debug_msg("Use default character set.");
+					index = MMFILE_LANGUAGE_ENGLISH;
+				}
+			} else {
+				debug_error("country iso value is NULL");
+				index = MMFILE_LANGUAGE_ENGLISH;
+			}
 		} else if (strncmp(lang, jpn_lang, strlen(jpn_lang)) == 0) {
 			/* This case is selected language is japanease */
 			debug_msg("[%s]character set is japanease", lang);
@@ -118,6 +136,7 @@ static int _MMFileUtilGetLocaleindex()
 		index = MMFILE_LANGUAGE_ENGLISH;
 	}
 
+	if(!con_iso) free(con_iso);
 	if(!lang) free(lang);
 
 	return index;

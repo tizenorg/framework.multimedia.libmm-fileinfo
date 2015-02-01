@@ -88,7 +88,7 @@ int MMFileFormatIsValidMP3 (const char *mmfileuri, int frameCnt)
 	ret = _MMFileSearchID3Tag (fp, &sizeID3);
 	if (ret == 0) {
 		debug_error("Error in searching the ID3 tag\n");
-		goto exit;
+//		goto exit;
 	}
 
 	ret = 0;
@@ -227,7 +227,7 @@ int MMFileFormatIsValidAAC (const char *mmfileuri)
 	ret = _MMFileSearchID3Tag (fp, &sizeID3);
 	if (ret == 0) {
 		debug_error("Error in searching the ID3 tag\n");
-		goto exit;
+//		goto exit;
 	}
 
 	ret = 0;
@@ -374,7 +374,7 @@ int MMFileFormatIsValidOGG (const char *mmfileuri)
 	ret = _MMFileSearchID3Tag (fp, &sizeID3);
 	if(ret == 0) {
 		debug_error("Error in searching the ID3 tag\n");
-		goto exit;
+//		goto exit;
 	}
 
 	ret = 0;
@@ -1159,7 +1159,7 @@ int MMFileFormatIsValidMatroska (const char *mmfileuri)
 #endif
 
 	while (size <= 8 && !(total & len_mask)) {
-		debug_error ("This case can not be handled yet....")
+		debug_error ("This case can not be handled yet....");
 		size++;
 		len_mask >>= 1;
 	}
@@ -1169,7 +1169,7 @@ int MMFileFormatIsValidMatroska (const char *mmfileuri)
 #endif
 
 	if (size > 8) {
-		debug_error ("This case can not be handled yet....")
+		debug_error ("This case can not be handled yet....");
 		ret = 0;
 		goto exit;
 	}
@@ -1178,7 +1178,7 @@ int MMFileFormatIsValidMatroska (const char *mmfileuri)
 
 	while (n < size) {
 		total = (total << 8) | buffer[4 + n++];
-		debug_error ("This case can not be handled yet....")
+		debug_error ("This case can not be handled yet....");
 	}
 
 	/* Does the probe data contain the whole header? */
@@ -1613,6 +1613,7 @@ static int _MMFileSearchID3Tag (MMFileIOHandle *fp, unsigned int *offset)
 	int tagVersion = 0;
 	int encSize = 0;
 	int readed = 0;
+	int ret = 0;
 
 	/*init offset*/
 	*offset = 0;
@@ -1671,10 +1672,13 @@ _START_TAG_SEARCH:
 
 	mmfile_seek(fp, acc_tagsize, MMFILE_SEEK_SET);
 	*offset = acc_tagsize;
+
+	ret = 1;
+
 	goto _START_TAG_SEARCH;
 
 search_end:
-	return 1;
+	return ret;
 }
 
 static int _MMFileIsFLACHeader  (void *header)

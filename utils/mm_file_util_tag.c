@@ -942,7 +942,8 @@ static int GetTagFromMetaBox (MMFileFormatContext *formatContext, MMFileIOHandle
 		int limit = basic_header->size - hdlrBoxHeader.size;
 		long long cover_offset = 0, track_offset =0 , genre_offset = 0, artist_offset = 0;
 
-		for (i = 0, cover_found = 0, track_found = 0, genre_found = 0, artist_found = 0; i < limit && (cover_found == 0 || track_found == 0 || genre_found == 0 || artist_found == 0) ; i++) {
+//		for (i = 0, cover_found = 0, track_found = 0, genre_found = 0, artist_found = 0; i < limit && (cover_found == 0 || track_found == 0 || genre_found == 0 || artist_found == 0) ; i++) {
+		for (i = 0; (i < limit) && (cover_found == 0) ; i++) {
 			readed = mmfile_read (fp, read_buf, _ITUNES_READ_BUF_SZ);
 			if (readed != _ITUNES_READ_BUF_SZ)
 				goto exception;
@@ -1519,8 +1520,7 @@ static bool make_characterset_array(char ***charset_array)
 {
 	char *locale = MMFileUtilGetLocale (NULL);
 
-	*charset_array = malloc(sizeof(char*) * AV_ID3V2_MAX);
-	memset(*charset_array, 0x0, sizeof(charset_array));
+	*charset_array = calloc(AV_ID3V2_MAX, sizeof(char*));
 	if (locale != NULL) {
 		(*charset_array)[AV_ID3V2_ISO_8859] = strdup(locale);
 	} else {
@@ -1741,6 +1741,11 @@ bool mm_file_id3tag_parse_v222(AvFileContentInfo* pInfo, unsigned char *buffer)
 				{
 					encodingOffSet = 1;
 					textEncodingType = AV_ID3V2_UTF16;
+				}
+
+				if (textEncodingType > AV_ID3V2_MAX) {
+					debug_msg ( "WRONG ENCOIDNG TYPE [%d], FRAME[%s]\n", textEncodingType, (char*)CompTmp);
+					continue;
 				}
 
 				//in order to deliver valid string to MP
@@ -2153,6 +2158,7 @@ bool mm_file_id3tag_parse_v223(AvFileContentInfo* pInfo, unsigned char *buffer)
 	int inx=0, encodingOffSet=0, realCpyFrameNum=0, checkImgMimeTypeMax=0, imgstartOffset=0,  tmp = 0;
 	int textEncodingType = 0;
 	char **charset_array = NULL;
+	char *MIME_PRFIX = "image/";
 
 	make_characterset_array(&charset_array);
 
@@ -2165,6 +2171,20 @@ bool mm_file_id3tag_parse_v223(AvFileContentInfo* pInfo, unsigned char *buffer)
 #ifdef __MMFILE_TEST_MODE__
 	debug_msg ("ID3tag v223--------------------------------------------------------------\n");
 #endif
+
+	/* check Extended Header */
+	if (buffer[5] & 0x40)
+	{
+		/* if extended header exists, skip it*/
+		int extendedHeaderLen = (unsigned long)buffer[10] << 21 | (unsigned long)buffer[11] << 14 | (unsigned long)buffer[12] << 7  | (unsigned long)buffer[13];
+
+		#ifdef __MMFILE_TEST_MODE__
+		debug_msg ("--------------- extendedHeaderLen = %d\n", extendedHeaderLen);
+		#endif
+
+		curPos += extendedHeaderLen;
+		curPos += 4;
+	}
 
 	if(needToloopv2taglen -MP3_TAGv2_23_TXT_HEADER_LEN > MP3_TAGv2_23_TXT_HEADER_LEN)
 	{
@@ -2266,6 +2286,11 @@ bool mm_file_id3tag_parse_v223(AvFileContentInfo* pInfo, unsigned char *buffer)
 							#endif
 							textEncodingType = buffer[curPos-purelyFramelen+encodingOffSet -1];
 						}
+					}
+
+					if (textEncodingType > AV_ID3V2_MAX) {
+						debug_msg ( "WRONG ENCOIDNG TYPE [%d], FRAME[%s]\n", textEncodingType, (char*)CompTmp);
+						continue;
 					}
 
 					memcpy(pExtContent, &buffer[curPos-purelyFramelen+encodingOffSet], purelyFramelen-encodingOffSet);
@@ -2674,6 +2699,7 @@ bool mm_file_id3tag_parse_v223(AvFileContentInfo* pInfo, unsigned char *buffer)
 							debug_msg ( "pInfo->pUnsyncLyrics returned = (%s), pInfo->unsynclyricsLen(%d)\n", pInfo->pUnsyncLyrics, pInfo->unsynclyricsLen);
 							#endif
 							pInfo->tagV2Info.bUnsyncLyricsMarked = true;
+							mmfile_free(lang_info);
 						}
 						else if(strncmp((char *)CompTmp, "TCON", 4) == 0 && pInfo->tagV2Info.bGenreMarked == false)
 						{
@@ -2808,6 +2834,12 @@ bool mm_file_id3tag_parse_v223(AvFileContentInfo* pInfo, unsigned char *buffer)
 							}
 
 							imgstartOffset += checkImgMimeTypeMax;
+
+							if (strncmp(pInfo->imageInfo.imageMIMEType, MIME_PRFIX, strlen(MIME_PRFIX)) != 0) {
+								pInfo->imageInfo.imgMimetypeLen = 0;
+								debug_error("APIC NOT VALID");
+								continue;
+							}
 
 							if((pExtContent[imgstartOffset] == '\0') && (realCpyFrameNum - imgstartOffset > 0))
 							{
@@ -3004,6 +3036,7 @@ bool mm_file_id3tag_parse_v224(AvFileContentInfo* pInfo, unsigned char *buffer)
 	int inx=0, encodingOffSet=0, realCpyFrameNum=0, checkImgMimeTypeMax=0, imgstartOffset=0,  tmp = 0;
 	int textEncodingType = 0;
 	char **charset_array = NULL;
+	char *MIME_PRFIX = "image/";
 
 	make_characterset_array(&charset_array);
 
@@ -3123,6 +3156,11 @@ bool mm_file_id3tag_parse_v224(AvFileContentInfo* pInfo, unsigned char *buffer)
 							#endif
 							textEncodingType = buffer[curPos-purelyFramelen+encodingOffSet -1];
 						}
+					}
+
+					if (textEncodingType > AV_ID3V2_MAX) {
+						debug_msg ( "WRONG ENCOIDNG TYPE [%d], FRAME[%s]\n", textEncodingType, (char*)CompTmp);
+						continue;
 					}
 
 					memcpy(pExtContent, &buffer[curPos-purelyFramelen+encodingOffSet], purelyFramelen-encodingOffSet);
@@ -3780,6 +3818,12 @@ bool mm_file_id3tag_parse_v224(AvFileContentInfo* pInfo, unsigned char *buffer)
 
 							imgstartOffset += checkImgMimeTypeMax;
 
+							if (strncmp(pInfo->imageInfo.imageMIMEType, MIME_PRFIX, strlen(MIME_PRFIX)) != 0) {
+								pInfo->imageInfo.imgMimetypeLen = 0;
+								debug_error("APIC NOT VALID");
+								continue;
+							}
+
 							if((pExtContent[imgstartOffset] == '\0') && (realCpyFrameNum - imgstartOffset > 0))
 							{
 								imgstartOffset++;//endofMIME(1byte)
@@ -3821,7 +3865,6 @@ bool mm_file_id3tag_parse_v224(AvFileContentInfo* pInfo, unsigned char *buffer)
 									dis_len = cur_pos + 1;
 
 									tmp_desc = mmfile_malloc(sizeof(char) * dis_len);
-									debug_msg ( "tmp_desc %x\n", tmp_desc);
 									memcpy(tmp_desc, pExtContent + imgstartOffset, dis_len);
 									debug_msg ( "tmp_desc %s\n", tmp_desc);
 

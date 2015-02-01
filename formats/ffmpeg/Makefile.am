@@ -47,10 +47,6 @@ if USE_DUMP
 libmmfile_formats_la_CFLAGS += -DMMFILE_FORMAT_DEBUG_DUMP
 endif  
 
-if USE_DRM
-libmmfile_formats_la_CFLAGS += $(DRMCLIENT_CFLAGS) -DDRM_SUPPORT
-endif
-
 if USE_IOMMAP
 libmmfile_formats_la_CFLAGS += -D__MMFILE_MMAP_MODE__
 endif  
@@ -62,10 +58,6 @@ libmmfile_formats_la_LIBADD = $(MMCOMMON_LIBS) \
 				$(AVFORMAT_LIBS) \
 				$(SWSCALE_LIBS) \
       			  $(top_builddir)/utils/libmmfile_utils.la 
-
-if USE_DRM
-libmmfile_formats_la_LIBADD += $(DRMCLIENT_LIBS)
-endif
 
 libmmfile_formats_la_CFLAGS += $(MMLOG_CFLAGS) -DMMF_LOG_OWNER=0x040 -DMMF_DEBUG_PREFIX=\"MMF-FILE-FORMAT-FFMPEG\"
 libmmfile_formats_la_LIBADD += $(MMLOG_LIBS)

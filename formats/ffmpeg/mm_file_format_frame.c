@@ -30,10 +30,6 @@
 #include "mm_file_format_ffmpeg_mem.h"
 #include "mm_file_format_frame.h"
 
-#ifdef DRM_SUPPORT
-#include <drm_client.h>
-#endif
-
 #define MILLION 1000000
 #ifdef MMFILE_FORMAT_DEBUG_DUMP
 static void __save_frame(AVFrame *pFrame, int width, int height, int iFrame);
@@ -523,19 +519,11 @@ int mmfile_format_get_frame(const char* path, double timestamp, bool is_accurate
 {
 	int ret = MMFILE_FORMAT_SUCCESS;
 	AVFormatContext *pFormatCtx = NULL;
-	drm_bool_type_e res = DRM_FALSE;
 
 	if (!size || !width || !height) {
 		return MMFILE_FORMAT_FAIL;
 	}
-#ifdef DRM_SUPPORT
-	ret = drm_is_drm_file (path, &res);
-	if (DRM_TRUE == res)
-	{
-		debug_error ("Not support DRM Contents\n");
-		return MMFILE_FORMAT_FAIL;
-	}
-#endif
+
 	av_register_all();
 
 	/* Open video file */
