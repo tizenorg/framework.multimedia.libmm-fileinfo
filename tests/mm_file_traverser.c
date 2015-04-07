@@ -36,7 +36,8 @@ static GList *g_directories = NULL;
 int mmfile_get_file_names (char *root_dir, MMFunc cbfunc, void* user_data)
 {
 	struct stat 	statbuf;
-	struct dirent 	*dirp;
+	struct dirent 	dirp;
+	struct dirent *result = NULL;
 	DIR				*dp;
 
 	char pdirname[MMFILE_PATH_MAX+1];
@@ -64,24 +65,24 @@ int mmfile_get_file_names (char *root_dir, MMFunc cbfunc, void* user_data)
 	{
 		if (strlen ((char*) element_data) > 0 && strlen ((char*) element_data) <= MMFILE_PATH_MAX)
 		{
-			strcpy (pdirname, (char*) element_data);
+			strncpy (pdirname, (char*) element_data, strlen((char*) element_data));
 				
 			if ( (dp = opendir (pdirname)) != NULL )
 			{
-				while ( (dirp = readdir (dp)) != NULL )
+				while (!readdir_r(dp, &dirp, &result))
 				{
 					char cdirname[MMFILE_PATH_MAX+1];
 					
-					if ( strcmp (dirp->d_name, ".") == 0 ||
-						 strcmp (dirp->d_name, "..") == 0 )
+					if ( strcmp (dirp.d_name, ".") == 0 ||
+						 strcmp (dirp.d_name, "..") == 0 )
 					{
 						continue;
 					}
 
 					memset (cdirname, 0x00, MMFILE_PATH_MAX+1);
-					strcpy (cdirname, pdirname);
-					strcat (cdirname, "/");
-					strcat (cdirname, dirp->d_name);
+					strncpy (cdirname, pdirname, strlen(pdirname));
+					strncat (cdirname, "/", 1);
+					strncat (cdirname, dirp.d_name, strlen(dirp.d_name));
 						
 					if ( lstat (cdirname, &statbuf) < 0 )
 					{

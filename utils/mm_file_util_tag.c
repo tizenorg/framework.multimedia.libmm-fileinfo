@@ -1521,6 +1521,13 @@ static bool make_characterset_array(char ***charset_array)
 	char *locale = MMFileUtilGetLocale (NULL);
 
 	*charset_array = calloc(AV_ID3V2_MAX, sizeof(char*));
+
+	if(*charset_array == NULL) {
+		if(locale != NULL)
+			free(locale);
+		return false;
+	}
+
 	if (locale != NULL) {
 		(*charset_array)[AV_ID3V2_ISO_8859] = strdup(locale);
 	} else {
@@ -1661,12 +1668,14 @@ bool mm_file_id3tag_parse_v110(AvFileContentInfo* pInfo,  unsigned char *buffer)
 
 	if(pInfo->tagV2Info.bTrackNumMarked== false) {
 		pInfo->pTrackNum = mmfile_malloc (5);
-		pInfo->pTrackNum[4] = 0;
-		snprintf(pInfo->pTrackNum, 4, "%04d", (int)buffer[126]);
-		pInfo->tracknumLen = strlen(pInfo->pTrackNum);
-		#ifdef __MMFILE_TEST_MODE__
-		debug_msg (  "pInfo->pTrackNum returned =(%s), pInfo->tracknumLen(%d)\n", pInfo->pTrackNum, pInfo->tracknumLen);
-		#endif
+		if(pInfo->pTrackNum != NULL) {
+			pInfo->pTrackNum[4] = 0;
+			snprintf(pInfo->pTrackNum, 4, "%04d", (int)buffer[126]);
+			pInfo->tracknumLen = strlen(pInfo->pTrackNum);
+			#ifdef __MMFILE_TEST_MODE__
+			debug_msg (  "pInfo->pTrackNum returned =(%s), pInfo->tracknumLen(%d)\n", pInfo->pTrackNum, pInfo->tracknumLen);
+			#endif
+		}
 	}
 
 	if(pInfo->tagV2Info.bGenreMarked == false) {
@@ -2085,8 +2094,11 @@ bool mm_file_id3tag_parse_v222(AvFileContentInfo* pInfo, unsigned char *buffer)
 								{
 									pInfo->imageInfo.imageLen = realCpyFrameNum - imgstartOffset;
 									pInfo->imageInfo.pImageBuf= mmfile_malloc (pInfo->imageInfo.imageLen + 1);
-									memcpy(pInfo->imageInfo.pImageBuf, pExtContent+ imgstartOffset, pInfo->imageInfo.imageLen);
-									pInfo->imageInfo.pImageBuf[pInfo->imageInfo.imageLen] = 0;
+
+									if(pInfo->imageInfo.pImageBuf != NULL) {
+										memcpy(pInfo->imageInfo.pImageBuf, pExtContent+ imgstartOffset, pInfo->imageInfo.imageLen);
+										pInfo->imageInfo.pImageBuf[pInfo->imageInfo.imageLen] = 0;
+									}
 
 									if(IS_INCLUDE_URL(pInfo->imageInfo.imageMIMEType))
 										pInfo->imageInfo.bURLInfo = true; //if mimetype is "-->", image date has an URL
@@ -2532,24 +2544,28 @@ bool mm_file_id3tag_parse_v223(AvFileContentInfo* pInfo, unsigned char *buffer)
 												{
 													synclyrics_info = (AvSynclyricsInfo *)malloc(sizeof(AvSynclyricsInfo));
 
-													if(textEncodingType == AV_ID3V2_UTF8) {
-														synclyrics_info->lyric_info= mmfile_malloc(copy_len+1);
-														memset(synclyrics_info->lyric_info, 0, copy_len+1);
-														memcpy(synclyrics_info->lyric_info, pExtContent+copy_start_pos, copy_len);
-														synclyrics_info->lyric_info[copy_len+1] = '\0';
-													}
-													else {
-														synclyrics_info->lyric_info = mmfile_string_convert ((const char*)&pExtContent[copy_start_pos], copy_len, "UTF-8", charset_array[AV_ID3V2_ISO_8859], NULL, NULL);
-													}
+													if(synclyrics_info != NULL) {
+														if(textEncodingType == AV_ID3V2_UTF8) {
+															synclyrics_info->lyric_info= mmfile_malloc(copy_len+1);
+															if(synclyrics_info->lyric_info != NULL) {
+																memset(synclyrics_info->lyric_info, 0, copy_len+1);
+																memcpy(synclyrics_info->lyric_info, pExtContent+copy_start_pos, copy_len);
+																synclyrics_info->lyric_info[copy_len+1] = '\0';
+															}
+														}
+														else {
+															synclyrics_info->lyric_info = mmfile_string_convert ((const char*)&pExtContent[copy_start_pos], copy_len, "UTF-8", charset_array[AV_ID3V2_ISO_8859], NULL, NULL);
+														}
 
-													synclyrics_info->time_info= (unsigned long)pExtContent[tmp+idx+1] << 24 | (unsigned long)pExtContent[tmp+idx+2] << 16 | (unsigned long)pExtContent[tmp+idx+3] << 8  | (unsigned long)pExtContent[tmp+idx+4];
-													idx += 4;
-													copy_start_pos = tmp + idx + 1;
-													#ifdef __MMFILE_TEST_MODE__
-													debug_msg("[%d][%s] idx[%d], copy_len[%d] copy_start_pos[%d]", synclyrics_info->time_info, synclyrics_info->lyric_info, idx, copy_len, copy_start_pos);
-													#endif
-													copy_len = 0;
-													synclyrics_info_list = g_list_append(synclyrics_info_list, synclyrics_info);
+														synclyrics_info->time_info= (unsigned long)pExtContent[tmp+idx+1] << 24 | (unsigned long)pExtContent[tmp+idx+2] << 16 | (unsigned long)pExtContent[tmp+idx+3] << 8  | (unsigned long)pExtContent[tmp+idx+4];
+														idx += 4;
+														copy_start_pos = tmp + idx + 1;
+														#ifdef __MMFILE_TEST_MODE__
+														debug_msg("[%d][%s] idx[%d], copy_len[%d] copy_start_pos[%d]", synclyrics_info->time_info, synclyrics_info->lyric_info, idx, copy_len, copy_start_pos);
+														#endif
+														copy_len = 0;
+														synclyrics_info_list = g_list_append(synclyrics_info_list, synclyrics_info);
+													}
 												}
 												copy_len ++;
 											}
@@ -2664,7 +2680,7 @@ bool mm_file_id3tag_parse_v223(AvFileContentInfo* pInfo, unsigned char *buffer)
 
 									char *char_set = NULL;
 									if (textEncodingType == AV_ID3V2_ISO_8859) {
-										if (!strcasecmp(lang_info, "KOR")) {
+										if (lang_info != NULL && !strcasecmp(lang_info, "KOR")) {
 											char_set = strdup("EUC-KR");
 										} else {
 											char_set = mmfile_get_charset((const char*)&pExtContent[tmp]);
@@ -2931,8 +2947,12 @@ bool mm_file_id3tag_parse_v223(AvFileContentInfo* pInfo, unsigned char *buffer)
 									{
 										pInfo->imageInfo.imageLen = realCpyFrameNum - imgstartOffset;
 										pInfo->imageInfo.pImageBuf = mmfile_malloc (pInfo->imageInfo.imageLen + 1);
-										memcpy(pInfo->imageInfo.pImageBuf, pExtContent+ imgstartOffset, pInfo->imageInfo.imageLen);
-										pInfo->imageInfo.pImageBuf[pInfo->imageInfo.imageLen] = 0;
+
+										if(pInfo->imageInfo.pImageBuf != NULL ) {
+											memcpy(pInfo->imageInfo.pImageBuf, pExtContent+ imgstartOffset, pInfo->imageInfo.imageLen);
+											pInfo->imageInfo.pImageBuf[pInfo->imageInfo.imageLen] = 0;
+										}
+
 										if(IS_INCLUDE_URL(pInfo->imageInfo.imageMIMEType))
 											pInfo->imageInfo.bURLInfo = true; //if mimetype is "-->", image date has an URL
 									}
@@ -3898,8 +3918,12 @@ bool mm_file_id3tag_parse_v224(AvFileContentInfo* pInfo, unsigned char *buffer)
 									{
 										pInfo->imageInfo.imageLen = realCpyFrameNum - imgstartOffset;
 										pInfo->imageInfo.pImageBuf= mmfile_malloc (pInfo->imageInfo.imageLen+1);
-										memcpy(pInfo->imageInfo.pImageBuf, pExtContent+ imgstartOffset, pInfo->imageInfo.imageLen);
-										pInfo->imageInfo.pImageBuf[pInfo->imageInfo.imageLen] = 0;
+
+										if(pInfo->imageInfo.pImageBuf != NULL) {
+											memcpy(pInfo->imageInfo.pImageBuf, pExtContent+ imgstartOffset, pInfo->imageInfo.imageLen);
+											pInfo->imageInfo.pImageBuf[pInfo->imageInfo.imageLen] = 0;
+										}
+
 										if(IS_INCLUDE_URL(pInfo->imageInfo.imageMIMEType))
 											pInfo->imageInfo.bURLInfo = true; //if mimetype is "-->", image date has an URL
 									}
@@ -4039,8 +4063,10 @@ void mm_file_id3tag_restore_content_info(AvFileContentInfo* pInfo)
 			if (pInfo->pGenre) {
 				pInfo->genreLen = strlen(pInfo->pGenre);
 				mpegAudioGenre = mmfile_malloc (sizeof(char) * (pInfo->genreLen + 1) );
-				mpegAudioGenre[pInfo->genreLen] = '\0';
-				strncpy(mpegAudioGenre, pInfo->pGenre, pInfo->genreLen);
+				if(mpegAudioGenre != NULL) {
+					mpegAudioGenre[pInfo->genreLen] = '\0';
+					strncpy(mpegAudioGenre, pInfo->pGenre, pInfo->genreLen);
+				}
 			} else {
 				pInfo->genreLen = 0;
 			}

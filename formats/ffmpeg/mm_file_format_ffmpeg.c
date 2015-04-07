@@ -568,8 +568,10 @@ int mmfile_format_read_tag_ffmpg (MMFileFormatContext *formatContext)
 								/* set art work data */
 								current_pos = mime_len  + description_len + (DATA_LENGTH * 8); /*current position is picture data */
 								if (formatContext->artwork) mmfile_free (formatContext->artwork);
+
 								formatContext->artwork = mmfile_malloc (data_len);
-								memcpy(formatContext->artwork, meta_data + current_pos, data_len);
+								if(formatContext->artwork != NULL)
+									memcpy(formatContext->artwork, meta_data + current_pos, data_len);
 
 								g_free(meta_data);
 							}

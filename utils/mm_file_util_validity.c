@@ -1136,6 +1136,12 @@ int MMFileFormatIsValidMatroska (const char *mmfileuri)
 	}
 
 	buffer = mmfile_malloc (_MMFILE_MKV_READ_BUFFER_LENGTH * sizeof(char));
+	if (buffer == NULL) {
+		debug_error ( "buffer is null\n", readed);
+		ret = 0;
+		goto exit;
+	}
+
 	readed = mmfile_read (fp, buffer, _MMFILE_MKV_READ_BUFFER_LENGTH);
 	if (_MMFILE_MKV_READ_BUFFER_LENGTH != readed) {
 		debug_error ( "read error. size = %d. Maybe end of file.\n", readed);

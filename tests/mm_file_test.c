@@ -40,11 +40,12 @@
 gettimeofday(&finish, NULL); \
 double end_time = (finish.tv_sec + 1e-6*finish.tv_usec); \
 double start_time = (start.tv_sec + 1e-6*start.tv_usec); \
+if(msg_tmp_fp != NULL) { \
 fprintf(msg_tmp_fp, "%s\n", title); \
 fprintf(msg_tmp_fp, " - start_time:   %3.5lf sec\n", start_time); \
 fprintf(msg_tmp_fp, " - finish_time:  %3.5lf sec\n", end_time); \
 fprintf(msg_tmp_fp, " - elapsed time: %3.5lf sec\n", end_time - start_time); \
-fflush(msg_tmp_fp); fclose(msg_tmp_fp); }
+fflush(msg_tmp_fp); fclose(msg_tmp_fp); }}
 
 typedef struct _mmfile_value {
 	int len;
@@ -140,8 +141,8 @@ do{	\
 			fseek (fp, 0, SEEK_END);	\
 			size = ftell(fp);	\
 			fseek (fp, 0, SEEK_SET);	\
-			data = malloc (size);	\
-			if (fread (data, size, sizeof(char), fp) != size) { printf("fread error\n"); }	\
+			if(size > 0) data = malloc (size);	\
+			if(data != NULL ) { if (fread (data, size, sizeof(char), fp) != size) { printf("fread error\n"); } }	\
 			fclose (fp);	\
 			printf("file size = %d\n", size );	\
 	}	\
@@ -190,7 +191,7 @@ int main(int argc, char **argv)
 		}
     }
 
-    exit(0);
+    return 0;//exit(0);
 }
 
 static int mmfile_get_file_infomation (void *data, void* user_data, bool file_test)
