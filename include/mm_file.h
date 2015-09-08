@@ -69,6 +69,7 @@ extern "C" {
 #define MM_FILE_CONTENT_AUDIO_SAMPLERATE	"content-audio-samplerate" /**< Sampling rate of audio stream */
 #define MM_FILE_CONTENT_AUDIO_TRACK_INDEX	"content-audio-track-index"	/**< Current stream of audio */
 #define MM_FILE_CONTENT_AUDIO_TRACK_COUNT	"content-audio-track-count"/**< Number of audio streams */
+#define MM_FILE_CONTENT_AUDIO_BITPERSAMPLE	"content-audio-bitpersample" /**< Bit per sample of audio stream */
 
 /**
  * tag attributes.
@@ -76,11 +77,13 @@ extern "C" {
 #define 	MM_FILE_TAG_ARTIST 			"tag-artist"			/**< Artist */
 #define	MM_FILE_TAG_TITLE				"tag-title"			/**< Title */
 #define	MM_FILE_TAG_ALBUM			"tag-album"			/**< Album */
+#define	MM_FILE_TAG_ALBUM_ARTIST	"tag-album-artist"			/**< Album_Artist */
 #define	MM_FILE_TAG_GENRE				"tag-genre"			/**< Genre */
 #define	MM_FILE_TAG_AUTHOR			"tag-author"			/**< Author / Composer */
 #define	MM_FILE_TAG_COPYRIGHT		"tag-copyright"		/**< Copyright */
 #define	MM_FILE_TAG_DATE				"tag-date"			/**< Year */
 #define	MM_FILE_TAG_DESCRIPTION		"tag-description"		/**< Description */
+#define	MM_FILE_TAG_COMMENT			"tag-comment"		/**< Comment */
 #define	MM_FILE_TAG_ARTWORK			"tag-artwork"			/**< Artwork */
 #define	MM_FILE_TAG_ARTWORK_SIZE		"tag-artwork-size"		/**< Artwork size */
 #define	MM_FILE_TAG_ARTWORK_MIME	"tag-artwork-mime"	/**< Artwork mime type */
@@ -94,6 +97,10 @@ extern "C" {
 #define	MM_FILE_TAG_UNSYNCLYRICS      	"tag-unsynclyrics"  	/**< Unsynchronized Lyrics Information*/
 #define	MM_FILE_TAG_SYNCLYRICS_NUM  	"tag-synclyrics-num"  	/**< Synchronized Lyrics Information*/
 #define	MM_FILE_TAG_RECDATE			"tag-recdate"			/**< Recoding date */
+#define	MM_FILE_TAG_ROTATE			"tag-rotate"			/**< Rotate(Orientation) Information*/
+#define	MM_FILE_TAG_CDIS			"tag-cdis"				/**< CDIS in User Data Information*/
+#define	MM_FILE_TAG_SMTA			"tag-smta"				/**< SMTA in User Data Information*/
+
 
 
 /**
@@ -125,6 +132,7 @@ ret = mm_file_get_attrs( tag_attrs,
 							MM_FILE_TAG_ARTIST, &ctag.artist.value.s_val, &ctag.artist.len,
 							MM_FILE_TAG_ALBUM, &ctag.album.value.s_val, &ctag.album.len,
 							MM_FILE_TAG_TITLE, &ctag.title.value.s_val, &ctag.title.len,
+							MM_FILE_TAG_ALBUM_ARTIST, &ctag.album_artist.value.s_val, &ctag.album_artist.len,
 							MM_FILE_TAG_GENRE, &ctag.genre.value.s_val, &ctag.genre.len,
 							NULL);
 if (ret != MM_ERROR_NONE)
@@ -168,6 +176,7 @@ ret = mm_file_get_attrs( tag_attrs,
 							MM_FILE_TAG_ARTIST, &ctag.artist.value.s_val, &ctag.artist.len,
 							MM_FILE_TAG_ALBUM, &ctag.album.value.s_val, &ctag.album.len,
 							MM_FILE_TAG_TITLE, &ctag.title.value.s_val, &ctag.title.len,
+							MM_FILE_TAG_ALBUM_ARTIST, &ctag.album_artist.value.s_val, &ctag.album_artist.len,
 							MM_FILE_TAG_GENRE, &ctag.genre.value.s_val, &ctag.genre.len,
 							NULL);
 if (ret != MM_ERROR_NONE)
@@ -445,6 +454,7 @@ mm_file_get_attrs(tag_attrs,
 				NULL,
 				MM_FILE_TAG_ARTIST, &ctag.artist.value.s_val, &ctag.artist.len,
 				MM_FILE_TAG_ALBUM, &ctag.album.value.s_val, &ctag.album.len,
+				MM_FILE_TAG_ALBUM_ARTIST, &ctag.album_artist.value.s_val, &ctag.album_artist.len,
 				NULL);
 
 // Destory tag handle
@@ -550,9 +560,37 @@ mm_file_destroy_content_attrs(content_attrs);
    */
 int mm_file_create_content_attrs_simple(MMHandleType *content_attrs, const char *filename);
 
+int mm_file_create_content_attrs_safe(MMHandleType *content_attrs, const char *filename);
+
 int mm_file_get_synclyrics_info(MMHandleType tag_attrs, int index, unsigned long *time_info, char **lyrics);
 
-int mm_file_get_video_frame(const char* path, double timestamp, bool keyframe, unsigned char **data, int *size, int *width, int *height);
+/**
+ * @brief Get a frame of video media. Not support for DRM Contents.
+ *
+ * @remarks @a frame must be released with @c free() by you
+ *
+ * @param [in] path The file path
+ * @param [in] timestamp The timestamp in milliseconds
+ * @param [in] is_accurate @a true, user can get an accurated frame for given the timestamp.\n
+ * @a false, user can only get the nearest i-frame of video rapidly.
+ * @param [out] frame raw frame data in RGB888
+ * @param [out] size The frame data size
+ * @param [out] width The frame width
+ * @param [out] height The frame height
+ * @return 0 on success, otherwise a negative error value
+ * @retval #METADATA_EXTRACTOR_ERROR_NONE Successful
+ * @retval #METADATA_EXTRACTOR_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #METADATA_EXTRACTOR_ERROR_OUT_OF_MEMORY Not enough memory is available
+ * @retval #METADATA_EXTRACTOR_ERROR_OPERATION_FAILED Internal Operation Fail
+ * @pre Set path to extract by calling metadata_extractor_set_path()
+ * @see metadata_extractor_create(), metadata_extractor_destroy()
+ */
+
+int mm_file_get_video_frame(const char* path, double timestamp, bool is_accurate, unsigned char **frame, int *size, int *width, int *height);
+
+int mm_file_get_video_frame_from_memory(const void *data, unsigned int datasize, double timestamp, bool is_accurate, unsigned char **frame, int *size, int *width, int *height);
+
+int mm_file_check_uhqa(const char* filename, bool *is_uhqa);
 
 /**
 	@}

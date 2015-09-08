@@ -1,7 +1,7 @@
 Name:	    libmm-fileinfo
 Summary:    Media Fileinfo
-Version:    0.5.0
-Release:    12
+Version:    0.6.36
+Release:    1
 Group:      System/Libraries
 License:    Apache-2.0
 Source0:    %{name}-%{version}.tar.gz
@@ -15,13 +15,8 @@ BuildRequires: pkgconfig(glib-2.0)
 BuildRequires: pkgconfig(libavcodec)
 BuildRequires: pkgconfig(libavutil)
 BuildRequires: pkgconfig(libavformat)
-
-%define use_drm 1
-
-%if %{use_drm}
-BuildRequires: libss-client-devel
-BuildRequires: pkgconfig(drm-client)
-%endif
+BuildRequires: pkgconfig(icu-i18n)
+BuildRequires: pkgconfig(vconf)
 
 %description
 Multimedia Framework FileInfo Library
@@ -41,41 +36,33 @@ Multimedia Framework FileInfo Library (developement files)
 %build
 ./autogen.sh
 
-%if %{use_drm}
-CFLAGS="${CFLAGS} -D_MM_PROJECT_FLOATER -DEXPORT_API=\"__attribute__((visibility(\\\"default\\\")))\" " LDFLAGS="${LDFLAGS}" ./configure  --disable-testmode --disable-dump --enable-dyn --disable-iommap --prefix=/usr --enable-drm --disable-gtk
-%else
 CFLAGS="${CFLAGS} -D_MM_PROJECT_FLOATER -DEXPORT_API=\"__attribute__((visibility(\\\"default\\\")))\" " LDFLAGS="${LDFLAGS}" ./configure --disable-testmode --disable-dump --enable-dyn --disable-iommap --prefix=/usr --disable-gtk
-%endif
 
-make
+make %{?jobs:-j%jobs}
 
 %install
 %make_install
+mkdir -p %{buildroot}/%{_datadir}/license
+cp -rf %{_builddir}/%{name}-%{version}/LICENSE.APLv2.0 %{buildroot}/%{_datadir}/license/%{name}
 
 
 %post -p /sbin/ldconfig
 
 %postun -p /sbin/ldconfig
 
-
 %files
-/usr/bin/memtrace_reader
-/usr/bin/mm_file_test
-/usr/lib/libmmffile.so.0
-/usr/lib/libmmffile.so.0.0.0
-/usr/lib/libmmfile_codecs.so.0
-/usr/lib/libmmfile_codecs.so.0.0.0
-/usr/lib/libmmfile_formats.so.0
-/usr/lib/libmmfile_formats.so.0.0.0
-/usr/lib/libmmfile_utils.so.0
-/usr/lib/libmmfile_utils.so.0.0.0
-/usr/lib/libmmffile.so
-/usr/lib/libmmfile_codecs.so
-/usr/lib/libmmfile_formats.so
-/usr/lib/libmmfile_utils.so
-
+%manifest libmm-fileinfo.manifest
+%{_bindir}/mm_file_test
+%{_libdir}/libmmffile.so.*
+%{_libdir}/libmmfile_codecs.so.*
+%{_libdir}/libmmfile_formats.so.*
+%{_libdir}/libmmfile_utils.so.*
+%{_libdir}/libmmffile.so
+%{_libdir}/libmmfile_codecs.so
+%{_libdir}/libmmfile_formats.so
+%{_libdir}/libmmfile_utils.so
+%{_datadir}/license/%{name}
 
 %files devel
-/usr/include/mmf/mm_file.h
-/usr/lib/pkgconfig/mm-fileinfo.pc
-
+%{_includedir}/mmf/mm_file.h
+%{_libdir}/pkgconfig/mm-fileinfo.pc

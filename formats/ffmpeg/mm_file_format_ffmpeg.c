@@ -24,11 +24,13 @@
 
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
+#include <libavutil/samplefmt.h>
 #ifdef __MMFILE_FFMPEG_V085__
 #include <libswscale/swscale.h>
 #endif
 #include <mm_error.h>
 #include <mm_types.h>
+
 #include "mm_debug.h"
 #include "mm_file_formats.h"
 #include "mm_file_utils.h"
@@ -36,8 +38,6 @@
 
 #include "mm_file_format_ffmpeg_mem.h"
 #include <sys/time.h>
-
-
 
 #define _SHORT_MEDIA_LIMIT		2000	/* under X seconds duration*/
 
@@ -53,7 +53,7 @@ static void _dump_av_packet (AVPacket *pkt);
 #endif
 
 static int	_get_video_fps (int frame_cnt, int duration, AVRational r_frame_rate, int is_roundup);
-static int	_get_first_good_video_frame (AVFormatContext *pFormatCtx, AVCodecContext *pCodecCtx, int videoStream, AVFrame **pFrame);
+static int	_get_first_good_video_frame (AVFormatContext *pFormatCtx, AVCodecContext *pCodecCtx, int videoStream, AVFrame **pFrame, int cdis);
 
 static int	ConvertVideoCodecEnum (int AVVideoCodecID);
 static int	ConvertAudioCodecEnum (int AVAudioCodecID);
@@ -142,23 +142,16 @@ int mmfile_format_open_ffmpg (MMFileFormatContext *formatContext)
 	}
 	
 	if (formatContext->filesrc->type  == MM_FILE_SRC_TYPE_FILE) {
-
-		if (formatContext->isdrm == MM_FILE_DRM_OMA) {
-			debug_error ("error: drm content\n");
-			goto exception;
-		} else {
-HANDLING_DRM_DIVX:
 #ifdef __MMFILE_FFMPEG_V085__
-			ret = avformat_open_input(&pFormatCtx, formatContext->filesrc->file.path, NULL, NULL);
+		ret = avformat_open_input(&pFormatCtx, formatContext->filesrc->file.path, NULL, NULL);
 #else
-			ret = av_open_input_file(&pFormatCtx, formatContext->filesrc->file.path, NULL, 0, NULL);
+		ret = av_open_input_file(&pFormatCtx, formatContext->filesrc->file.path, NULL, 0, NULL);
 #endif
-			if (ret < 0) {
-				debug_error("error: cannot open %s %d\n", formatContext->filesrc->file.path, ret);
-				goto exception;
-			}
-			formatContext->privateFormatData = pFormatCtx;
+		if (ret < 0) {
+			debug_error("error: cannot open %s %d\n", formatContext->filesrc->file.path, ret);
+			goto exception;
 		}
+		formatContext->privateFormatData = pFormatCtx;
 	}
 
 	if (!pFormatCtx || !(pFormatCtx->nb_streams > 0)) {
@@ -179,6 +172,12 @@ HANDLING_DRM_DIVX:
 			#ifdef __MMFILE_TEST_MODE__
 			debug_msg ("FFMPEG video codec id: 0x%08X\n", pFormatCtx->streams[i]->codec->codec_id);
 			#endif
+
+			AVPacket pkt = pFormatCtx->streams[i]->attached_pic;
+			if((pkt.data != NULL) && (pkt.size > 0))
+				continue;
+
+			//eventhough codec_id is 0, avformat_find_stream_info() can find proper codec_id.
 			formatContext->videoTotalTrackNum += 1;
 		}
 		if (pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -222,6 +221,25 @@ exception: /* fail to get content information */
 	return MMFILE_FORMAT_FAIL;
 }
 
+static bool __check_uhqa(int sample_rate,  enum AVSampleFormat sample_fmt_info)
+{
+	bool ret = FALSE;
+
+#ifdef __MMFILE_TEST_MODE__
+	debug_error("[sample rate %d, sample format %d]", sample_rate, sample_fmt_info);
+#endif
+
+	if ((sample_rate >= 44100) && (sample_fmt_info >= AV_SAMPLE_FMT_S32)) {
+#ifdef __MMFILE_TEST_MODE__
+		debug_msg("UHQA CONTENT");
+#endif
+		ret = TRUE;
+	} else {
+		ret = FALSE;
+	}
+
+	return ret;
+}
 
 EXPORT_API
 int mmfile_format_read_stream_ffmpg (MMFileFormatContext * formatContext)
@@ -240,12 +258,20 @@ int mmfile_format_read_stream_ffmpg (MMFileFormatContext * formatContext)
 	}
 
 	pFormatCtx = formatContext->privateFormatData;
+	pFormatCtx->start_time = -1;
 
 	/**
 	 *@important if data is corrupted, occur segment fault by av_find_stream_info().
 	 *			- fixed 2009-06-25.
 	 */
+#ifdef __MMFILE_FFMPEG_V100__
+	if (formatContext->cdis != 1)
+		ret = avformat_find_stream_info (pFormatCtx, NULL);
+	else
+		ret = 0;
+#else
 	ret = av_find_stream_info (pFormatCtx);
+#endif
 	if ( ret < 0 ) {
 		debug_warning ("failed to find stream info. errcode = %d\n", ret);
 		goto exception;
@@ -256,11 +282,15 @@ int mmfile_format_read_stream_ffmpg (MMFileFormatContext * formatContext)
 	#endif
 
 	/**
-	 *@note asf has long duration bug.
+	 *@note asf has long duration bug. and Some content's start time is wrong(negative number).
 	 */
-	 /*hjkim, 120808, FIX_ME. I modified this code for temporary*/
-	//formatContext->duration = (long long)(pFormatCtx->duration + pFormatCtx->start_time) * 1000 / AV_TIME_BASE;
-	formatContext->duration = (long long)(pFormatCtx->duration) * 1000 / AV_TIME_BASE;
+	if(pFormatCtx->start_time < 0) {
+		debug_warning ("Wrong Start time = %lld\n", pFormatCtx->start_time);
+		formatContext->duration = (long long)(pFormatCtx->duration) * 1000 / AV_TIME_BASE;
+	}
+	else {
+		formatContext->duration = (long long)(pFormatCtx->duration + pFormatCtx->start_time) * 1000 / AV_TIME_BASE;
+	}
 
 	formatContext->videoStreamId = -1;
 	formatContext->audioStreamId = -1;
@@ -288,6 +318,14 @@ int mmfile_format_read_stream_ffmpg (MMFileFormatContext * formatContext)
 				pVideoCodecCtx = pFormatCtx->streams[i]->codec;
 				if (pVideoCodecCtx) {
 					videoStream->codecId		= ConvertVideoCodecEnum (pVideoCodecCtx->codec_id);
+					if (videoStream->codecId == MM_VIDEO_CODEC_NONE) {
+						debug_error("Proper codec is not found in [%d] stream", i);
+						formatContext->videoStreamId = -1;
+						mmfile_free(videoStream);
+						formatContext->streams[MMFILE_VIDEO_STREAM] = NULL;
+						videoStream = NULL;
+						continue;
+					}
 
 					/**
 					 * Get FPS
@@ -331,6 +369,8 @@ int mmfile_format_read_stream_ffmpg (MMFileFormatContext * formatContext)
 					audioStream->bitRate		= pAudioCodecCtx->bit_rate;
 					audioStream->nbChannel		= pAudioCodecCtx->channels;
 					audioStream->samplePerSec	= pAudioCodecCtx->sample_rate;
+					audioStream->bitPerSample = pAudioCodecCtx->bits_per_raw_sample;
+					audioStream->is_uhqa = __check_uhqa(audioStream->samplePerSec, pFormatCtx->streams[i]->codec->sample_fmt);
 				}
 			}
 		}
@@ -359,7 +399,11 @@ exception:
 	}
 
 	if (pFormatCtx) {
+#ifdef __MMFILE_FFMPEG_V100__
+		avformat_close_input (&pFormatCtx);
+#else
 		av_close_input_file (pFormatCtx);
+#endif
 		formatContext->privateFormatData = NULL;
 	}
 
@@ -370,6 +414,9 @@ exception:
 	return MMFILE_FORMAT_FAIL;
 }
 
+#define DATA_LENGTH 4
+#define POS_OF_MIME_LEN DATA_LENGTH
+#define CONVERT_TO_INT(dest, src) {dest = 0; dest |= (0 |src[0] << 24) | (0 | src[1] << 16) | (0 | src[2] << 8) | (0 | src[3]);}
 
 EXPORT_API
 int mmfile_format_read_tag_ffmpg (MMFileFormatContext *formatContext)
@@ -389,46 +436,156 @@ int mmfile_format_read_tag_ffmpg (MMFileFormatContext *formatContext)
 
 #ifdef __MMFILE_FFMPEG_V085__
 /*metadata extracted by ffmpeg*/
-	if( (pFormatCtx != NULL) && (pFormatCtx->metadata != NULL) ) {
-		AVDictionary *metainfo = pFormatCtx->metadata;
-		AVDictionaryEntry *tag=NULL;
+	int idx = 0;
 
-		while((tag=av_dict_get(metainfo, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-			if(tag->key != NULL) {
-				if(!strcmp(tag->key, "title")) {
-					if (formatContext->title)	free (formatContext->title);
-					formatContext->title = mmfile_strdup (tag->value);
-				} else if(!strcmp(tag->key, "artist")) {
-					if (formatContext->artist)	free (formatContext->artist);
-					formatContext->artist = mmfile_strdup (tag->value);
-				} else if(!strcmp(tag->key, "composer")) {
-					if (formatContext->composer)	free (formatContext->composer);
-					formatContext->composer = mmfile_strdup (tag->value);
-				} else if(!strcmp(tag->key, "album")) {
-					if (formatContext->album)	free (formatContext->album);
-					formatContext->album = mmfile_strdup (tag->value);
-				} else if(!strcmp(tag->key, "copyright")) {
-					if (formatContext->copyright)	free (formatContext->copyright);
-					formatContext->copyright = mmfile_strdup (tag->value);
-				} else if(!strcmp(tag->key, "comment")) {
-					if (formatContext->comment)	free (formatContext->comment);
-					formatContext->comment = mmfile_strdup (tag->value);
-				} else if(!strcmp(tag->key, "genre")) {
-					if (formatContext->genre)	free (formatContext->genre);
-					formatContext->genre = mmfile_strdup (tag->value);
-				} else if(!strcmp(tag->key, "date")) {
-					if (formatContext->year)	free (formatContext->year);
-					formatContext->year = mmfile_strdup (tag->value);
-				} else if(!strcmp(tag->key, "track")) {
-					if (formatContext->tagTrackNum)	free (formatContext->tagTrackNum);
-					formatContext->tagTrackNum = mmfile_strdup (tag->value);
-				} else if(!strcmp(tag->key, "lyrics")) {
-					if (formatContext->unsyncLyrics)	free (formatContext->unsyncLyrics);
-					formatContext->unsyncLyrics= mmfile_strdup (tag->value);
+	if(pFormatCtx != NULL) {
+		for(idx = 0; idx < pFormatCtx->nb_streams + 1; idx++) {
+			AVDictionary *metainfo = NULL;
+			AVStream *st = NULL;
+
+			if(idx < pFormatCtx->nb_streams) {	//Check metadata of normal stream like audio, video, video cover art(cover art saved in new stream). refer to mov_read_covr() in ffmpeg.
+				st = pFormatCtx->streams[idx];
+					if(st != NULL)
+						metainfo = st->metadata;
+			} else {	//Check metadata of Content
+				if(pFormatCtx->metadata != NULL) {
+					metainfo = pFormatCtx->metadata;
 				} else {
-					debug_log("Not support metadata. [%s:%s]", tag->key, tag->value);
+					continue;
 				}
 			}
+
+			/*refer to mov_read_covr() in ffmpeg.*/
+			if(st != NULL) {
+				AVPacket pkt = st->attached_pic;
+				int codec_id = st->codec->codec_id;
+
+				if((pkt.data != NULL) && (pkt.size > 0)) {
+					/*Set mime type*/
+					if (formatContext->artworkMime)	mmfile_free (formatContext->artworkMime);
+
+					if(codec_id == AV_CODEC_ID_MJPEG)
+						formatContext->artworkMime = mmfile_strdup("image/jpeg");
+					else if(codec_id == AV_CODEC_ID_PNG)
+						formatContext->artworkMime = mmfile_strdup("image/png");
+					else if(codec_id == AV_CODEC_ID_BMP)
+						formatContext->artworkMime = mmfile_strdup("image/bmp");
+					else
+						debug_error ("Unknown cover type: 0x%x\n", codec_id);
+
+					/*Copy artwork*/
+					if (formatContext->artwork)	mmfile_free (formatContext->artwork);
+
+					formatContext->artworkSize = pkt.size;
+					formatContext->artwork = mmfile_malloc (pkt.size);
+					memcpy (formatContext->artwork, pkt.data, pkt.size);
+				}
+			}
+
+			if(metainfo != NULL) {
+				AVDictionaryEntry *tag = NULL;
+				while((tag=av_dict_get(metainfo, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+					if(tag->key != NULL) {
+						if(!strcasecmp(tag->key, "title")) {
+							if (formatContext->title)	free (formatContext->title);
+							formatContext->title = mmfile_strdup (tag->value);
+						} else if(!strcasecmp(tag->key, "artist")) {
+							if (formatContext->artist)	free (formatContext->artist);
+							formatContext->artist = mmfile_strdup (tag->value);
+						} else if(!strcasecmp(tag->key, "composer")) {
+							if (formatContext->composer)	free (formatContext->composer);
+							formatContext->composer = mmfile_strdup (tag->value);
+						} else if(!strcasecmp(tag->key, "album")) {
+							if (formatContext->album)	free (formatContext->album);
+							formatContext->album = mmfile_strdup (tag->value);
+						} else if(!strcasecmp(tag->key, "album_artist")) {
+							if (formatContext->album_artist)	free (formatContext->album_artist);
+							formatContext->album_artist = mmfile_strdup (tag->value);
+						} else if(!strcasecmp(tag->key, "copyright")) {
+							if (formatContext->copyright)	free (formatContext->copyright);
+							formatContext->copyright = mmfile_strdup (tag->value);
+						} else if(!strcasecmp(tag->key, "comment")) {
+							if (formatContext->comment)	free (formatContext->comment);
+							formatContext->comment = mmfile_strdup (tag->value);
+						} else if(!strcasecmp(tag->key, "description")) {
+							if (formatContext->description)	free (formatContext->description);
+							formatContext->description = mmfile_strdup (tag->value);
+						} else if(!strcasecmp(tag->key, "genre")) {
+							if (formatContext->genre)	free (formatContext->genre);
+							formatContext->genre = mmfile_strdup (tag->value);
+						} else if(!strcasecmp(tag->key, "date")) {
+							if (formatContext->year)	free (formatContext->year);
+							formatContext->year = mmfile_strdup (tag->value);
+						} else if(!strcasecmp(tag->key, "creation_time")) {
+							if (formatContext->recDate)	free (formatContext->recDate);
+							formatContext->recDate = mmfile_strdup (tag->value);
+						} else if((!strcasecmp(tag->key, "track")) || (!strcasecmp(tag->key, "tracknumber"))) {
+							if (formatContext->tagTrackNum)	free (formatContext->tagTrackNum);
+							formatContext->tagTrackNum = mmfile_strdup (tag->value);
+						} else if(!strcasecmp(tag->key, "lyrics")) {
+							if (formatContext->unsyncLyrics)	free (formatContext->unsyncLyrics);
+							formatContext->unsyncLyrics= mmfile_strdup (tag->value);
+						} else if(!strcasecmp(tag->key, "rotate")) {	//can be "90", "180", "270"
+							if (formatContext->rotate)	free (formatContext->rotate);
+							formatContext->rotate= mmfile_strdup (tag->value);
+						} else if(!strcasecmp(tag->key, "metadata_block_picture")) {
+							gsize len = 0;
+							guchar *meta_data = NULL;
+
+							meta_data = g_base64_decode(tag->value, &len);
+							if (meta_data != NULL) {
+								/* in METADATA_BLOCK_PICTURE,
+								the length of mime type and  the length of description are flexible,
+								so, we have to get the length of their for getting correct postion of picture data. */
+								int mime_len = 0;
+								int description_len = 0;
+								int data_len = 0;
+								int current_pos = 0;
+								unsigned char current_data[DATA_LENGTH] = {0};
+
+								/* get length of mime_type */
+								memcpy(current_data, meta_data + POS_OF_MIME_LEN, DATA_LENGTH);
+								CONVERT_TO_INT(mime_len, current_data);
+
+								/* get length of description */
+								current_pos =  mime_len + (DATA_LENGTH * 2); /*current position is length of description */
+								memcpy(current_data, meta_data + current_pos, DATA_LENGTH);
+								CONVERT_TO_INT(description_len, current_data);
+
+								/* get length of picture data */
+								current_pos = mime_len  + description_len + (DATA_LENGTH * 7); /*current position is length of picture data */
+								memcpy(current_data, meta_data + current_pos, DATA_LENGTH);
+								CONVERT_TO_INT(data_len, current_data);
+
+								/* set the size of art work */
+								formatContext->artworkSize = data_len;
+
+								/* set mime type */
+								current_pos = POS_OF_MIME_LEN + DATA_LENGTH; /*current position is mime type */
+								if (formatContext->artworkMime) mmfile_free (formatContext->artworkMime);
+								formatContext->artworkMime = strndup((const char*)meta_data + current_pos, mime_len);
+
+								/* set art work data */
+								current_pos = mime_len  + description_len + (DATA_LENGTH * 8); /*current position is picture data */
+								if (formatContext->artwork) mmfile_free (formatContext->artwork);
+
+								formatContext->artwork = mmfile_malloc (data_len);
+								if(formatContext->artwork != NULL)
+									memcpy(formatContext->artwork, meta_data + current_pos, data_len);
+
+								g_free(meta_data);
+							}
+						} else {
+							#ifdef __MMFILE_TEST_MODE__
+							debug_log("Not support metadata. [%s:%s]", tag->key, tag->value);
+							#endif
+						}
+					}
+				}
+			}
+#ifdef 	__MMFILE_TEST_MODE__
+			mmfile_format_print_tags (formatContext);
+#endif
 		}
 	}
 #else
@@ -481,9 +638,6 @@ int mmfile_format_read_tag_ffmpg (MMFileFormatContext *formatContext)
 		formatContext->tagTrackNum = mmfile_strdup (tracknum);
 	}
 #endif
-	#ifdef 	__MMFILE_TEST_MODE__
-	mmfile_format_print_tags (formatContext);
-	#endif
 
 	return MMFILE_FORMAT_SUCCESS;
 }
@@ -509,6 +663,11 @@ int mmfile_format_read_frame_ffmpg  (MMFileFormatContext *formatContext, unsigne
 		formatContext->videoTotalTrackNum <= 0) {
 
 		debug_error ("invalid param\n");
+		return MMFILE_FORMAT_FAIL;
+	}
+
+	if (formatContext->isdrm == MM_FILE_DRM_PROTECTED) {
+		debug_error ("This is protected drm file\n");
 		return MMFILE_FORMAT_FAIL;
 	}
 
@@ -545,8 +704,16 @@ int mmfile_format_read_frame_ffmpg  (MMFileFormatContext *formatContext, unsigne
 
 		/*set workaround bug flag*/
 		pVideoCodecCtx->workaround_bugs = FF_BUG_AUTODETECT;
-
+#ifdef __MMFILE_FFMPEG_V100__
+		/* this is solution for PLM issue P13091703323 */
+		/* If using thread when decoding frame, the result of decoding is not always same. 
+		    Thumbnail of video content is different with original file when copying file. */
+		pVideoCodecCtx->thread_type = 0;
+		pVideoCodecCtx->thread_count = 0;
+		ret = avcodec_open2 (pVideoCodecCtx, pVideoCodec, NULL);
+#else
 		ret = avcodec_open (pVideoCodecCtx, pVideoCodec);
+#endif
 		if (ret < 0) {
 			debug_error ("error: avcodec_open fail.\n");
 			return MMFILE_FORMAT_FAIL;
@@ -562,7 +729,7 @@ int mmfile_format_read_frame_ffmpg  (MMFileFormatContext *formatContext, unsigne
 
 		/* search & decode */
 		// seek_ts = formatContext->duration > _SHORT_MEDIA_LIMIT ? seek_ts : 0;	/*if short media, seek first key frame*/
-		ret = _get_first_good_video_frame (pFormatCtx, pVideoCodecCtx, formatContext->videoStreamId, &pFrame);
+		ret = _get_first_good_video_frame (pFormatCtx, pVideoCodecCtx, formatContext->videoStreamId, &pFrame, formatContext->cdis);
 		if ( ret != MMFILE_FORMAT_SUCCESS ) {
 			debug_error ("error: get key frame\n");
 			ret = MMFILE_FORMAT_FAIL;
@@ -609,7 +776,7 @@ int mmfile_format_read_frame_ffmpg  (MMFileFormatContext *formatContext, unsigne
 		}
 
 #ifdef __MMFILE_FFMPEG_V085__
-		static struct SwsContext *img_convert_ctx;
+		struct SwsContext *img_convert_ctx = NULL;
 
 		img_convert_ctx = sws_getContext (width, height, pVideoCodecCtx->pix_fmt,
 		                          width, height, PIX_FMT_RGB24, SWS_BICUBIC, NULL, NULL, NULL);
@@ -625,10 +792,13 @@ int mmfile_format_read_frame_ffmpg  (MMFileFormatContext *formatContext, unsigne
 		if ( ret < 0 ) {
 			debug_error ("failed to convet image\n");
 			ret = MMFILE_FORMAT_FAIL;
+			sws_freeContext(img_convert_ctx);
+			img_convert_ctx = NULL;
 			goto exception;
 		}
 
 		sws_freeContext(img_convert_ctx);
+		img_convert_ctx = NULL;
 #else
 		ret = img_convert ((AVPicture *)pFrameRGB, PIX_FMT_RGB24, (AVPicture*)pFrame, pVideoCodecCtx->pix_fmt, width, height);
 		if ( ret < 0 ) {
@@ -668,7 +838,11 @@ int mmfile_format_close_ffmpg(MMFileFormatContext *formatContext)
 		AVFormatContext *pFormatCtx = formatContext->privateFormatData;
 
 		if (pFormatCtx) {
+#ifdef __MMFILE_FFMPEG_V100__
+			avformat_close_input(&pFormatCtx);
+#else
 			av_close_input_file (pFormatCtx);
+#endif
 			formatContext->privateFormatData = NULL;
 		}
 	}
@@ -831,7 +1005,7 @@ static void _dump_av_packet (AVPacket *pkt)
 }
 #endif
 
-static int _get_first_good_video_frame (AVFormatContext *pFormatCtx, AVCodecContext *pCodecCtx, int videoStream, AVFrame **pFrame)
+static int _get_first_good_video_frame (AVFormatContext *pFormatCtx, AVCodecContext *pCodecCtx, int videoStream, AVFrame **pFrame, int cdis)
 {
 	// AVStream *st = NULL;
 	AVPacket pkt;
@@ -850,10 +1024,16 @@ static int _get_first_good_video_frame (AVFormatContext *pFormatCtx, AVCodecCont
 #ifdef MMFILE_FORMAT_DEBUG_DUMP
 	char pgm_name[256] = {0,};
 #endif
+	int key_search_limit = 0;
+	int frame_search_limit = 0;
 
-#define	_RETRY_SEARCH_LIMIT		150
+#define	_RETRY_SEARCH_LIMIT		75
 #define	_KEY_SEARCH_LIMIT		(_RETRY_SEARCH_LIMIT*2)		/*2 = 1 read. some frame need to read one more*/
-#define	_FRAME_SEARCH_LIMIT		1000
+#define	_FRAME_SEARCH_LIMIT		500
+
+#define	_RETRY_SEARCH_LIMIT_CDIS		10
+#define	_KEY_SEARCH_LIMIT_CDIS		(_RETRY_SEARCH_LIMIT*2)		/*2 = 1 read. some frame need to read one more*/
+#define	_FRAME_SEARCH_LIMIT_CDIS		10
 
 	first_frame = avcodec_alloc_frame ();
 	tmp_frame = avcodec_alloc_frame ();
@@ -875,7 +1055,15 @@ static int _get_first_good_video_frame (AVFormatContext *pFormatCtx, AVCodecCont
 	pCodecCtx->hurry_up = 1;
 #endif
 
-	for(i = 0, v = 0, key_detected = 0, frame = first_frame; i < _KEY_SEARCH_LIMIT && v < _FRAME_SEARCH_LIMIT;) {
+	if (cdis == 1) {
+		key_search_limit = _KEY_SEARCH_LIMIT_CDIS;
+		frame_search_limit = _FRAME_SEARCH_LIMIT_CDIS;
+	} else {
+		key_search_limit = _KEY_SEARCH_LIMIT;
+		frame_search_limit = _FRAME_SEARCH_LIMIT;
+	}
+
+	for(i = 0, v = 0, key_detected = 0, frame = first_frame; i < key_search_limit && v < frame_search_limit;) {
 		av_init_packet (&pkt);
 		got_picture = 0;
 
@@ -934,7 +1122,9 @@ static int _get_first_good_video_frame (AVFormatContext *pFormatCtx, AVCodecCont
 								break;
 							} else {
 								/*reset video frame count & retry searching*/
+								#ifdef __MMFILE_TEST_MODE__
 								debug_warning ("not good fame. retry scanning.\n");
+								#endif
 								i = 0;
 								v = 0;
 								retry++;
@@ -1009,61 +1199,64 @@ static int ConvertVideoCodecEnum (int AVVideoCodecID)
 
 	switch (AVVideoCodecID)
 	{
-		case CODEC_ID_NONE:
+		case AV_CODEC_ID_NONE:
 			ret_codecid = MM_VIDEO_CODEC_NONE;
 			break;
-		case CODEC_ID_MPEG1VIDEO:
+		case AV_CODEC_ID_MPEG1VIDEO:
 			ret_codecid = MM_VIDEO_CODEC_MPEG1;
 			break;
-		case CODEC_ID_MPEG2VIDEO:  ///< preferred ID for MPEG-1/2 video decoding
+		case AV_CODEC_ID_MPEG2VIDEO:  ///< preferred ID for MPEG-1/2 video decoding
 			ret_codecid = MM_VIDEO_CODEC_MPEG2;
 			break;
-		case CODEC_ID_MPEG2VIDEO_XVMC:
+		case AV_CODEC_ID_MPEG2VIDEO_XVMC:
 			ret_codecid = MM_VIDEO_CODEC_MPEG2;
 			break;
-		case CODEC_ID_H261:
+		case AV_CODEC_ID_H261:
 			ret_codecid = MM_VIDEO_CODEC_H261;
 			break;
-		case CODEC_ID_H263:
+		case AV_CODEC_ID_H263:
 			ret_codecid = MM_VIDEO_CODEC_H263;
 			break;
-		case CODEC_ID_MPEG4:
+		case AV_CODEC_ID_MPEG4:
 			ret_codecid = MM_VIDEO_CODEC_MPEG4;
 			break;
-		case CODEC_ID_MSMPEG4V1:
+		case AV_CODEC_ID_MSMPEG4V1:
 			ret_codecid = MM_VIDEO_CODEC_MPEG4;
 			break;
-		case CODEC_ID_MSMPEG4V2:
+		case AV_CODEC_ID_MSMPEG4V2:
 			ret_codecid = MM_VIDEO_CODEC_MPEG4;
 			break;
-		case CODEC_ID_MSMPEG4V3:
+		case AV_CODEC_ID_MSMPEG4V3:
 			ret_codecid = MM_VIDEO_CODEC_MPEG4;
 			break;
-		case CODEC_ID_WMV1:
+		case AV_CODEC_ID_WMV1:
 			ret_codecid = MM_VIDEO_CODEC_WMV;
 			break;
-		case CODEC_ID_WMV2:
+		case AV_CODEC_ID_WMV2:
 			ret_codecid = MM_VIDEO_CODEC_WMV;
 			break;
-		case CODEC_ID_H263P:
+		case AV_CODEC_ID_H263P:
 			ret_codecid = MM_VIDEO_CODEC_H263;
 			break;
-		case CODEC_ID_H263I:
+		case AV_CODEC_ID_H263I:
 			ret_codecid = MM_VIDEO_CODEC_H263;
 			break;
-		case CODEC_ID_H264:
+		case AV_CODEC_ID_FLV1:
+			ret_codecid = MM_VIDEO_CODEC_FLV;
+			break;
+		case AV_CODEC_ID_H264:
 			ret_codecid = MM_VIDEO_CODEC_H264;
 			break;
-		case CODEC_ID_INDEO2:
-		case CODEC_ID_INDEO3:
-		case CODEC_ID_INDEO4:
-		case CODEC_ID_INDEO5:
+		case AV_CODEC_ID_INDEO2:
+		case AV_CODEC_ID_INDEO3:
+		case AV_CODEC_ID_INDEO4:
+		case AV_CODEC_ID_INDEO5:
 			ret_codecid = MM_VIDEO_CODEC_INDEO;
 			break;
-		case CODEC_ID_THEORA:
+		case AV_CODEC_ID_THEORA:
 			ret_codecid = MM_VIDEO_CODEC_THEORA;
 			break;
-		case CODEC_ID_CINEPAK:
+		case AV_CODEC_ID_CINEPAK:
 			ret_codecid = MM_VIDEO_CODEC_CINEPAK;
 			break;
 #ifndef __MMFILE_FFMPEG_V085__
@@ -1071,16 +1264,16 @@ static int ConvertVideoCodecEnum (int AVVideoCodecID)
 			ret_codecid = MM_VIDEO_CODEC_XVID;
 			break;
 #endif
-		case CODEC_ID_VC1:
+		case AV_CODEC_ID_VC1:
 			ret_codecid = MM_VIDEO_CODEC_VC1;
 			break;
-		case CODEC_ID_WMV3:
+		case AV_CODEC_ID_WMV3:
 			ret_codecid = MM_VIDEO_CODEC_WMV;
 			break;
-		case CODEC_ID_AVS:
+		case AV_CODEC_ID_AVS:
 			ret_codecid = MM_VIDEO_CODEC_AVS;
 			break;
-		case CODEC_ID_RL2:
+		case AV_CODEC_ID_RL2:
 			ret_codecid = MM_VIDEO_CODEC_REAL;
 			break;
 		default:
@@ -1098,48 +1291,51 @@ static int ConvertAudioCodecEnum (int AVAudioCodecID)
 
 	switch (AVAudioCodecID)
 	{
-		case CODEC_ID_AMR_NB:
-		case CODEC_ID_AMR_WB:
+		case AV_CODEC_ID_AMR_NB:
+		case AV_CODEC_ID_AMR_WB:
 			ret_codecid = MM_AUDIO_CODEC_AMR;
 			break;
 		/* RealAudio codecs*/
-		case CODEC_ID_RA_144:
-		case CODEC_ID_RA_288:
+		case AV_CODEC_ID_RA_144:
+		case AV_CODEC_ID_RA_288:
 			ret_codecid = MM_AUDIO_CODEC_REAL;
 			break;
-		case CODEC_ID_MP2:
+		case AV_CODEC_ID_MP2:
 			ret_codecid = MM_AUDIO_CODEC_MP2;
 			break;
-		case CODEC_ID_MP3:
-		case CODEC_ID_MP3ADU:
-		case CODEC_ID_MP3ON4:
+		case AV_CODEC_ID_MP3:
+		case AV_CODEC_ID_MP3ADU:
+		case AV_CODEC_ID_MP3ON4:
 			ret_codecid = MM_AUDIO_CODEC_MP3;
 			break;
-		case CODEC_ID_AAC:
+		case AV_CODEC_ID_AAC:
 			ret_codecid = MM_AUDIO_CODEC_AAC;
 			break;
-		case CODEC_ID_AC3:
+		case AV_CODEC_ID_AC3:
 			ret_codecid = MM_AUDIO_CODEC_AC3;
 			break;
-		case CODEC_ID_VORBIS:
+		case AV_CODEC_ID_VORBIS:
 			ret_codecid = MM_AUDIO_CODEC_VORBIS;
 			break;
-		case CODEC_ID_WMAV1:
-		case CODEC_ID_WMAV2:
-		case CODEC_ID_WMAVOICE:
-		case CODEC_ID_WMAPRO:
-		case CODEC_ID_WMALOSSLESS:
+		case AV_CODEC_ID_WMAV1:
+		case AV_CODEC_ID_WMAV2:
+		case AV_CODEC_ID_WMAVOICE:
+		case AV_CODEC_ID_WMAPRO:
+		case AV_CODEC_ID_WMALOSSLESS:
 			ret_codecid = MM_AUDIO_CODEC_WMA;
 			break;
-		case CODEC_ID_ALAC:
+		case AV_CODEC_ID_FLAC:
+			ret_codecid = MM_AUDIO_CODEC_FLAC;
+			break;
+		case AV_CODEC_ID_ALAC:
 			ret_codecid = MM_AUDIO_CODEC_ALAC;
 			break;
-		case CODEC_ID_WAVPACK:
+		case AV_CODEC_ID_WAVPACK:
 			ret_codecid = MM_AUDIO_CODEC_WAVE;
 			break;
-		case CODEC_ID_ATRAC3:
-		case CODEC_ID_ATRAC3P:
-		case CODEC_ID_EAC3:
+		case AV_CODEC_ID_ATRAC3:
+		case AV_CODEC_ID_ATRAC3P:
+		case AV_CODEC_ID_EAC3:
 			ret_codecid = MM_AUDIO_CODEC_AC3;
 			break;
 		default:
@@ -1210,7 +1406,7 @@ static int getMimeType(int formatId, char *mimeType)
 			sprintf(mimeType,"video/mpeg");
 			break;
 		case MM_FILE_FORMAT_FLV:
-			sprintf(mimeType,"audio/basic");
+			sprintf(mimeType,"video/x-flv");
 			break;
 		case MM_FILE_FORMAT_QT:
 			sprintf(mimeType,"video/quicktime");
@@ -1218,11 +1414,16 @@ static int getMimeType(int formatId, char *mimeType)
 		case MM_FILE_FORMAT_MATROSKA:
 			sprintf(mimeType,"video/x-matroska");
 			break;
+		case MM_FILE_FORMAT_FLAC:
+			sprintf(mimeType,"audio/x-flac");
+			break;
 		default:
 			ret = -1;
 	}
 
+#ifdef __MMFILE_TEST_MODE__
 	debug_msg ("id: %d, mimetype: %s\n", formatId, mimeType);
+#endif
 
 	return ret;
 }

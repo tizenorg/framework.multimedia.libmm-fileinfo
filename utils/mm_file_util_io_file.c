@@ -68,20 +68,21 @@ static int file_open(MMFileIOHandle *handle, const char *filename, int flags)
     access |= O_BINARY;
 #endif
 
-    fd = open(filename, access, 0666);
-    if (fd < 0)
-    {
-        debug_error ("open error\n");
-        return MMFILE_IO_FAILED;
-    }
-    
-    privateData = mmfile_malloc (sizeof(tMMFORMAT_FILEIO_DATA));
-    if (!privateData)
-    {
-        debug_error ("calloc privateData\n");
-        return MMFILE_IO_FAILED;
-    }
-    
+	fd = open(filename, access, 0666);
+	if (fd < 0)
+	{
+		debug_error ("open error\n");
+		return MMFILE_IO_FAILED;
+	}
+
+	privateData = mmfile_malloc (sizeof(tMMFORMAT_FILEIO_DATA));
+	if (!privateData)
+	{
+		close(fd);
+		debug_error ("calloc privateData\n");
+		return MMFILE_IO_FAILED;
+	}
+
     privateData->fd = fd;
     privateData->offset = 0;
         

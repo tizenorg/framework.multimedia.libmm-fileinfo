@@ -66,8 +66,8 @@ static int mmf_mem_open (MMFileIOHandle *handle, const char *filename, int flags
         debug_error ("error: mmfile_malloc memHandle\n");
         goto exception;
     }
-    
-    memHandle->ptr = (unsigned char*)atoi(splitedString[0]);
+
+    memHandle->ptr = (unsigned char*)atoll(splitedString[0]);	//memory allocation address changed. memHandle->ptr = (unsigned char*)atoi(splitedString[0]);
     memHandle->size = atoi(splitedString[1]);
     memHandle->offset = 0;
     memHandle->state = 0;
@@ -88,11 +88,13 @@ exception:
         mmfile_strfreev (splitedString);
     }
 
+#if 0	//dead code
     if (memHandle)
     {
         mmfile_free (memHandle);
         handle->privateData  = NULL;
     }
+#endif
 
     return MMFILE_IO_FAILED;
 }

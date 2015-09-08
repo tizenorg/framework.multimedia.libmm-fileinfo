@@ -40,11 +40,12 @@
 gettimeofday(&finish, NULL); \
 double end_time = (finish.tv_sec + 1e-6*finish.tv_usec); \
 double start_time = (start.tv_sec + 1e-6*start.tv_usec); \
+if(msg_tmp_fp != NULL) { \
 fprintf(msg_tmp_fp, "%s\n", title); \
 fprintf(msg_tmp_fp, " - start_time:   %3.5lf sec\n", start_time); \
 fprintf(msg_tmp_fp, " - finish_time:  %3.5lf sec\n", end_time); \
 fprintf(msg_tmp_fp, " - elapsed time: %3.5lf sec\n", end_time - start_time); \
-fflush(msg_tmp_fp); fclose(msg_tmp_fp); }
+fflush(msg_tmp_fp); fclose(msg_tmp_fp); }}
 
 typedef struct _mmfile_value {
 	int len;
@@ -53,19 +54,21 @@ typedef struct _mmfile_value {
 		double d_val;
 		char *s_val;
 		void *p_val;
-	} value;
+	}value;
 }mmfile_value_t;
 
 typedef struct _TagContext {
 	mmfile_value_t artist;
 	mmfile_value_t title;
 	mmfile_value_t album;
+	mmfile_value_t album_artist;
 	mmfile_value_t genre;
 	mmfile_value_t author;
 	mmfile_value_t copyright;
 	mmfile_value_t date; 			//string
 	mmfile_value_t recdate;			//string
 	mmfile_value_t description;
+	mmfile_value_t comment;
 	mmfile_value_t artwork;		//data
 	mmfile_value_t artwork_size;	//int
 	mmfile_value_t artwork_mime;
@@ -78,6 +81,7 @@ typedef struct _TagContext {
 	mmfile_value_t altitude;		//<-double
 	mmfile_value_t unsynclyrics;
 	mmfile_value_t synclyrics_size;
+	mmfile_value_t rotate;			//string
 }TagContext_t;
 
 typedef struct _ContentContext {
@@ -95,6 +99,7 @@ typedef struct _ContentContext {
 	int audio_samplerate;
 	int audio_track_id;
 	int audio_track_num;
+	int audio_bitpersample;
 	mmfile_value_t thumbnail;
 }ContentContext_t;
 
@@ -105,7 +110,7 @@ char * AudioCodecTypeString [] = {
 	"Real",
 	"AAC-Low complexity",	"AAC-Main profile",	"AAC-Scalable sample rate",	"AAC-Long term prediction",	"AAC-High Efficiency v1",	"AAC-High efficiency v2",
 	"DolbyDigital",	"Apple Lossless",	"Sony proprietary",	"SPEEX",	"Vorbis",	"AIFF",	"AU",	"None (will be deprecated)",
-	"PCM",	"ALAW",	"MULAW",	"MS ADPCM"
+	"PCM",	"ALAW",	"MULAW",	"MS ADPCM",	"FLAC"
 };
 
 
@@ -114,7 +119,7 @@ char * VideoCodecTypeString [] = {
 	"H263", "H264", "H26L", "MPEG4", "MPEG1", "WMV", "DIVX", "XVID", "H261", "H262/MPEG2-part2", "H263v2",  "H263v3",
 	"Motion JPEG", "MPEG2", "MPEG4 part-2 Simple profile",	"MPEG4 part-2 Advanced Simple profile",	"MPEG4 part-2 Main profile",
 	"MPEG4 part-2 Core profile", "MPEG4 part-2 Adv Coding Eff profile",	"MPEG4 part-2 Adv RealTime Simple profile",
-	"MPEG4 part-10 (h.264)",	"Real",	"VC-1",	"AVS",	"Cinepak",	"Indeo",	"Theora"
+	"MPEG4 part-10 (h.264)",	"Real",	"VC-1",	"AVS",	"Cinepak",	"Indeo",	"Theora", "Flv"
 };
 
 
@@ -136,8 +141,8 @@ do{	\
 			fseek (fp, 0, SEEK_END);	\
 			size = ftell(fp);	\
 			fseek (fp, 0, SEEK_SET);	\
-			data = malloc (size);	\
-			fread (data, size, sizeof(char), fp);	\
+			if(size > 0) data = malloc (size);	\
+			if(data != NULL ) { if (fread (data, size, sizeof(char), fp) != size) { printf("fread error\n"); } }	\
 			fclose (fp);	\
 			printf("file size = %d\n", size );	\
 	}	\
@@ -186,7 +191,7 @@ int main(int argc, char **argv)
 		}
     }
 
-    exit(0);
+    return 0;//exit(0);
 }
 
 static int mmfile_get_file_infomation (void *data, void* user_data, bool file_test)
@@ -241,7 +246,7 @@ static int mmfile_get_file_infomation (void *data, void* user_data, bool file_te
 
 		if (audio_track_num)
 		{
-			mm_file_get_attrs(content_attrs,
+			ret = mm_file_get_attrs(content_attrs,
 									NULL,
 									MM_FILE_CONTENT_AUDIO_CODEC, &ccontent.audio_codec,
 									MM_FILE_CONTENT_AUDIO_SAMPLERATE, &ccontent.audio_samplerate,
@@ -249,20 +254,27 @@ static int mmfile_get_file_infomation (void *data, void* user_data, bool file_te
 									MM_FILE_CONTENT_AUDIO_CHANNELS, &ccontent.audio_channel,
 									MM_FILE_CONTENT_AUDIO_TRACK_INDEX, &ccontent.audio_track_id,
 									MM_FILE_CONTENT_AUDIO_TRACK_COUNT, &ccontent.audio_track_num,
+									MM_FILE_CONTENT_AUDIO_BITPERSAMPLE, &ccontent.audio_bitpersample,
 									NULL);
-			printf ("[Audio] ----------------------------------------- \n");
-			printf("# audio codec: %d ", ccontent.audio_codec);
-			printf ("[%s]\n", (ccontent.audio_codec >= 0 && ccontent.audio_codec < MM_AUDIO_CODEC_NUM)? AudioCodecTypeString[ccontent.audio_codec] : "Invalid");
-			printf("# audio samplerate: %d Hz\n", ccontent.audio_samplerate);
-			printf("# audio bitrate: %d bps\n", ccontent.audio_bitrate);
-			printf("# audio channel: %d\n", ccontent.audio_channel);
-			printf("# audio track id: %d\n", ccontent.audio_track_id);
-			printf("# audio track num: %d\n", ccontent.audio_track_num);
+
+			if(ret != MM_ERROR_NONE) {
+				printf("failed to get audio attrs\n");
+			} else {
+				printf ("[Audio] ----------------------------------------- \n");
+				printf("# audio codec: %d ", ccontent.audio_codec);
+				printf ("[%s]\n", (ccontent.audio_codec >= 0 && ccontent.audio_codec < MM_AUDIO_CODEC_NUM)? AudioCodecTypeString[ccontent.audio_codec] : "Invalid");
+				printf("# audio samplerate: %d Hz\n", ccontent.audio_samplerate);
+				printf("# audio bitrate: %d bps\n", ccontent.audio_bitrate);
+				printf("# audio channel: %d\n", ccontent.audio_channel);
+				printf("# audio track id: %d\n", ccontent.audio_track_id);
+				printf("# audio track num: %d\n", ccontent.audio_track_num);
+				printf("# audio bit per sample: %d\n", ccontent.audio_bitpersample);
+			}
 		}
 	
 		if (video_track_num)
 		{
-			mm_file_get_attrs(content_attrs,
+			ret = mm_file_get_attrs(content_attrs,
 									NULL,
 									MM_FILE_CONTENT_VIDEO_CODEC, &ccontent.video_codec,
 									MM_FILE_CONTENT_VIDEO_BITRATE, &ccontent.video_bitrate,
@@ -273,6 +285,9 @@ static int mmfile_get_file_infomation (void *data, void* user_data, bool file_te
 									MM_FILE_CONTENT_VIDEO_THUMBNAIL, &ccontent.thumbnail.value.p_val, &ccontent.thumbnail.len,
 									NULL);
 
+			if(ret != MM_ERROR_NONE) {
+				printf("failed to get video attrs\n");
+			} else {
 				printf ("[Video] ----------------------------------------- \n");
 				printf("# video codec: %d ", ccontent.video_codec);
 				printf ("[%s]\n", (ccontent.video_codec >= 0 && ccontent.video_codec < MM_VIDEO_CODEC_NUM)? VideoCodecTypeString[ccontent.video_codec] : "Invalid");
@@ -282,6 +297,7 @@ static int mmfile_get_file_infomation (void *data, void* user_data, bool file_te
 				printf("# video width/height: %d x %d\n", ccontent.video_w, ccontent.video_h);
 				printf("# video thumbnail: %p\n", ccontent.thumbnail.value.p_val);
 			}
+		}
 
 		mm_file_destroy_content_attrs(content_attrs);
 	} else {
@@ -308,6 +324,7 @@ static int mmfile_get_file_infomation (void *data, void* user_data, bool file_te
 									&err_attr_name,
 									MM_FILE_TAG_ARTIST, &ctag.artist.value.s_val, &ctag.artist.len,
 									MM_FILE_TAG_ALBUM, &ctag.album.value.s_val, &ctag.album.len,
+									MM_FILE_TAG_ALBUM_ARTIST, &ctag.album_artist.value.s_val, &ctag.album_artist.len,
 									MM_FILE_TAG_TITLE, &ctag.title.value.s_val, &ctag.title.len,
 									MM_FILE_TAG_GENRE, &ctag.genre.value.s_val, &ctag.genre.len,
 									MM_FILE_TAG_AUTHOR, &ctag.author.value.s_val, &ctag.author.len,
@@ -315,6 +332,7 @@ static int mmfile_get_file_infomation (void *data, void* user_data, bool file_te
 									MM_FILE_TAG_DATE, &ctag.date.value.s_val, &ctag.date.len,
 									MM_FILE_TAG_RECDATE, &ctag.recdate.value.s_val, &ctag.recdate.len,
 									MM_FILE_TAG_DESCRIPTION, &ctag.description.value.s_val, &ctag.description.len,
+									MM_FILE_TAG_COMMENT, &ctag.comment.value.s_val, &ctag.comment.len,
 									MM_FILE_TAG_ARTWORK, &ctag.artwork.value.p_val, &ctag.artwork.len,
 									MM_FILE_TAG_ARTWORK_SIZE, &ctag.artwork_size.value.i_val,
 									MM_FILE_TAG_ARTWORK_MIME, &ctag.artwork_mime.value.s_val, &ctag.artwork_mime.len,
@@ -327,6 +345,7 @@ static int mmfile_get_file_infomation (void *data, void* user_data, bool file_te
 									MM_FILE_TAG_CONDUCTOR, &ctag.conductor.value.s_val, &ctag.conductor.len,
 									MM_FILE_TAG_UNSYNCLYRICS, &ctag.unsynclyrics.value.s_val, &ctag.unsynclyrics.len,
 									MM_FILE_TAG_SYNCLYRICS_NUM, &ctag.synclyrics_size.value.i_val,
+									MM_FILE_TAG_ROTATE, &ctag.rotate.value.s_val, &ctag.rotate.len,
 									NULL);
 		if (ret != MM_ERROR_NONE &&  err_attr_name)
 		{
@@ -339,34 +358,37 @@ static int mmfile_get_file_infomation (void *data, void* user_data, bool file_te
 				fclose (msg_tmp_fp);
 				msg_tmp_fp = NULL;
 			}
-
+			mm_file_destroy_tag_attrs(tag_attrs);
 			return -1;
 		}
 
 		/* print tag information	 */
 		printf ("[Tag] =================================== \n");
-		printf("# artist: %s\n", ctag.artist.value.s_val);
-		printf("# title: %s\n", ctag.title.value.s_val);
-		printf("# album: %s\n", ctag.album.value.s_val);
-		printf("# genre: %s\n", ctag.genre.value.s_val);
-		printf("# author: %s\n", ctag.author.value.s_val);
-		printf("# copyright: %s\n", ctag.copyright.value.s_val);
-		printf("# year: %s\n", ctag.date.value.s_val);
-		printf("# recdate: %s\n", ctag.recdate.value.s_val);
-		printf("# description: %s\n", ctag.description.value.s_val);
-		printf("# artwork: %p\n", ctag.artwork.value.p_val);
-		printf("# artwork_size: %d\n", ctag.artwork_size.value.i_val);
-		printf("# artwork_mime: %s\n", ctag.artwork_mime.value.s_val);
-		printf("# track number: %s\n", ctag.track_num.value.s_val);
-		printf("# classification: %s\n", ctag.classfication.value.s_val);
-		printf("# rating: %s\n", ctag.rating.value.s_val);
-		printf("# longitude: %f\n", ctag.longitude.value.d_val);
-		printf("# latitude: %f\n", ctag.latitude.value.d_val);
-		printf("# altitude: %f\n", ctag.altitude.value.d_val);
-		printf("# conductor: %s\n", ctag.conductor.value.s_val);
+		printf("# artist: [%s]\n", ctag.artist.value.s_val);
+		printf("# title: [%s]\n", ctag.title.value.s_val);
+		printf("# album: [%s]\n", ctag.album.value.s_val);
+		printf("# album_artist: [%s]\n", ctag.album_artist.value.s_val);
+		printf("# genre: [%s]\n", ctag.genre.value.s_val);
+		printf("# author: [%s]\n", ctag.author.value.s_val);
+		printf("# copyright: [%s]\n", ctag.copyright.value.s_val);
+		printf("# year: [%s]\n", ctag.date.value.s_val);
+		printf("# recdate: [%s]\n", ctag.recdate.value.s_val);
+		printf("# description: [%s]\n", ctag.description.value.s_val);
+		printf("# comment: [%s]\n", ctag.comment.value.s_val);
+		printf("# artwork: [%p]\n", ctag.artwork.value.p_val);
+		printf("# artwork_size: [%d]\n", ctag.artwork_size.value.i_val);
+		printf("# artwork_mime: [%s]\n", ctag.artwork_mime.value.s_val);
+		printf("# track number: [%s]\n", ctag.track_num.value.s_val);
+		printf("# classification: [%s]\n", ctag.classfication.value.s_val);
+		printf("# rating: [%s]\n", ctag.rating.value.s_val);
+		printf("# longitude: [%f]\n", ctag.longitude.value.d_val);
+		printf("# latitude: [%f]\n", ctag.latitude.value.d_val);
+		printf("# altitude: [%f]\n", ctag.altitude.value.d_val);
+		printf("# conductor: [%s]\n", ctag.conductor.value.s_val);
 		printf("# unsynclyrics_length: [%d]\n", ctag.unsynclyrics.len);
-		printf("# unsynclyrics: %s\n", ctag.unsynclyrics.value.s_val);
-		printf("# synclyrics size: %d\n", ctag.synclyrics_size.value.i_val);
+		printf("# unsynclyrics: [%s]\n", ctag.unsynclyrics.value.s_val);
+		printf("# synclyrics size: [%d]\n", ctag.synclyrics_size.value.i_val);
+		printf("# rotate: [%s]\n", ctag.rotate.value.s_val);
 
 		if(ctag.synclyrics_size.value.i_val > 0) {
 			int idx = 0;
@@ -378,7 +400,7 @@ static int mmfile_get_file_infomation (void *data, void* user_data, bool file_te
 			for(idx = 0; idx < ctag.synclyrics_size.value.i_val; idx++) {
 				ret = mm_file_get_synclyrics_info(tag_attrs, idx, &time_info, &lyrics_info);
 				if(ret == MM_ERROR_NONE) {
-					printf("[%2d][%6d][%s]\n", idx, time_info, lyrics_info);
+					printf("[%2d][%6ld][%s]\n", idx, time_info, lyrics_info);
 				} else {
 					printf("Error when get lyrics\n");
 					break;

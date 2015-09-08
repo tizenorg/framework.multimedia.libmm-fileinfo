@@ -23,11 +23,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#ifdef DRM_SUPPORT
-#include <drm_client.h>
-#endif
-
-
 #include "mm_debug.h"
 #include "mm_file_format_private.h"
 #include "mm_file_utils.h"
@@ -53,43 +48,61 @@ int (*MMFileOpenFunc[MM_FILE_FORMAT_NUM+1]) (MMFileFormatContext *fileContext) =
 	mmfile_format_open_mid,		/* MID */
 	mmfile_format_open_mmf,		/* MMF */
 	mmfile_format_open_ffmpg,	/* DIVX */
-	NULL,						/* FLV */
+	mmfile_format_open_ffmpg,	/* FLV */
 	NULL,						/* VOB */
 	mmfile_format_open_imy,		/* IMY */
 	mmfile_format_open_ffmpg,	/* WMA */
 	mmfile_format_open_ffmpg,	/* WMV */
 	NULL,						/* JPG */
+	mmfile_format_open_ffmpg,	/* FLAC */
 	NULL,
 };
 
-static int _CleanupFrameContext (MMFileFormatContext *formatContext)
+static int _CleanupFrameContext (MMFileFormatContext *formatContext, bool clean_all)
 {
 	if (formatContext) {
-		formatContext->ReadFrame	= NULL;
-		formatContext->ReadStream	= NULL;
-		formatContext->ReadTag		= NULL;
-		formatContext->Close		= NULL;
 
-		if (formatContext->title)			mmfile_free(formatContext->title);
-		if (formatContext->artist)			mmfile_free(formatContext->artist);
+		if (formatContext->ReadStream)	formatContext->ReadStream	= NULL;
+		if (formatContext->ReadFrame)		formatContext->ReadFrame	= NULL;
+		if (formatContext->ReadTag)		formatContext->ReadTag		= NULL;
+		if (formatContext->Close)			formatContext->Close			= NULL;
+
+		if (formatContext->uriFileName)		mmfile_free(formatContext->uriFileName);
+		if (formatContext->title)				mmfile_free(formatContext->title);
+		if (formatContext->artist)				mmfile_free(formatContext->artist);
 		if (formatContext->author)			mmfile_free(formatContext->author);
-		if (formatContext->composer)		mmfile_free(formatContext->composer);
-		if (formatContext->album)			mmfile_free(formatContext->album);
-		if (formatContext->year)			mmfile_free(formatContext->year);
-		if (formatContext->copyright)		mmfile_free(formatContext->copyright);
+		if (formatContext->composer)			mmfile_free(formatContext->composer);
+		if (formatContext->album)				mmfile_free(formatContext->album);
+		if (formatContext->album_artist)		mmfile_free(formatContext->album_artist);
+		if (formatContext->copyright)			mmfile_free(formatContext->copyright);
+		if (formatContext->description)			mmfile_free(formatContext->description);
 		if (formatContext->comment)			mmfile_free(formatContext->comment);
-		if (formatContext->genre)			mmfile_free(formatContext->genre);
+		if (formatContext->genre)				mmfile_free(formatContext->genre);
+		if (formatContext->classification)		mmfile_free(formatContext->classification);
+		if (formatContext->year)				mmfile_free(formatContext->year);
+		if (formatContext->recDate) 			mmfile_free(formatContext->recDate);
+		if (formatContext->tagTrackNum) 		mmfile_free(formatContext->tagTrackNum);
+		if (formatContext->rating)				mmfile_free(formatContext->rating);
+		if (formatContext->artworkMime)		mmfile_free(formatContext->artworkMime);
 		if (formatContext->artwork)			mmfile_free(formatContext->artwork);
-		if (formatContext->classification)	mmfile_free(formatContext->classification);
-		if (formatContext->conductor)		mmfile_free(formatContext->conductor);
+		if (formatContext->conductor)			mmfile_free(formatContext->conductor);
+		if (formatContext->unsyncLyrics)		mmfile_free(formatContext->unsyncLyrics);
+		if (formatContext->rotate)				mmfile_free(formatContext->rotate);
+
+		if(clean_all)	//syncLyrics has to be freed in mm_file_destroy_tag_attrs() except abnormal status
+			if (formatContext->syncLyrics)			mm_file_free_synclyrics_list(formatContext->syncLyrics);
 
 		if (formatContext->privateFormatData)	mmfile_free(formatContext->privateFormatData);
 		if (formatContext->privateCodecData)	mmfile_free(formatContext->privateCodecData);
 
-
 		if (formatContext->nbStreams > 0) {
 			int i = 0;
-			for (i = 0; (i < formatContext->nbStreams) && (i < MAXSTREAMS); i++) {
+
+			/*formatContext->streams[0] is video, formatContext->streams[1] is audio.*/
+			if (formatContext->streams[0]) mmfile_free(formatContext->streams[0]);
+			if (formatContext->streams[1]) mmfile_free(formatContext->streams[1]);
+
+			for (i = 2; (i < formatContext->nbStreams) && (i < MAXSTREAMS); i++) {
 				if (formatContext->streams[i]) mmfile_free(formatContext->streams[i]);
 			}
 		}
@@ -104,28 +117,11 @@ static int _CleanupFrameContext (MMFileFormatContext *formatContext)
 			mmfile_free (formatContext->thumbNail);
 		}
 
-		formatContext->title		= NULL;
-		formatContext->artist		= NULL;
-		formatContext->author		= NULL;
-		formatContext->composer		= NULL;
-		formatContext->album		= NULL;
-		formatContext->copyright	= NULL;
-		formatContext->comment		= NULL;
-		formatContext->genre		= NULL;
-		formatContext->artwork		= NULL;
-
-		formatContext->privateFormatData	= NULL;
-		formatContext->privateCodecData		= NULL;
-		formatContext->classification		= NULL;
-
-		formatContext->videoTotalTrackNum	= 0;
-		formatContext->audioTotalTrackNum	= 0;
-
-		formatContext->nbStreams					= 0;
-		formatContext->streams[MMFILE_AUDIO_STREAM]	= NULL;
-		formatContext->streams[MMFILE_VIDEO_STREAM]	= NULL;
-		formatContext->thumbNail					= NULL;
+		formatContext->videoTotalTrackNum = 0;
+		formatContext->audioTotalTrackNum = 0;
+		formatContext->nbStreams = 0;
 	}
+
 	return MMFILE_FORMAT_SUCCESS;
 }
 
@@ -157,7 +153,9 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 		/*extract metadata for all file. ex)a , a. , a.mp3*/
 		if (pos == 0) {
 			/*even though there is no file extension, extracto metadata*/
+			#ifdef __MMFILE_TEST_MODE__
 			debug_msg ("no file extension");
+			#endif
 		}
 		else if (_MMF_FILE_FILEEXT_MAX > (filename_len - pos - 1)) {
 			strncpy (extansion_name, fileName + pos +1 , (filename_len - pos - 1));
@@ -167,60 +165,32 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 			return MMFILE_FORMAT_FAIL;		/*invalid file name*/
 		}
 
-#ifdef DRM_SUPPORT
-		/**
-		 * Make URI name with file name
-		 */
-		drm_bool_type_e res = DRM_TRUE;
-		drm_file_type_e file_type = DRM_TYPE_UNDEFINED;
-		int ret = 0;
-		bool is_drm = FALSE;
-
-		ret = drm_is_drm_file (fileSrc->file.path, &res);
-		if (ret == DRM_RETURN_SUCCESS && DRM_TRUE == res)
-		{
-			ret = drm_get_file_type(fileSrc->file.path, &file_type);
-			if((ret == DRM_RETURN_SUCCESS) && ((file_type == DRM_TYPE_OMA_V1) ||(file_type == DRM_TYPE_OMA_V2)))
-			{
-				is_drm = TRUE;
-			}
+	
+		*isdrm = MM_FILE_DRM_NONE;
+#ifdef __MMFILE_MMAP_MODE__
+		*urifilename = mmfile_malloc (MMFILE_MMAP_URI_LEN + filename_len + 1);
+		if (!*urifilename) {
+			debug_error ("error: mmfile_malloc uriname\n");
+			return MMFILE_FORMAT_FAIL;
 		}
 
-		if (is_drm)
-		{
-			*isdrm = MM_FILE_DRM_OMA;
-			debug_error ("OMA DRM detected. Not Support DRM Content\n");
-			return MMFILE_FORMAT_FAIL;		/*Not Support DRM Content*/
-		} 
-		else 
-#endif // DRM_SUPPORT			
-		{
-			*isdrm = MM_FILE_DRM_NONE;
-#ifdef __MMFILE_MMAP_MODE__
-			*urifilename = mmfile_malloc (MMFILE_MMAP_URI_LEN + filename_len + 1);
-			if (!*urifilename) {
-				debug_error ("error: mmfile_malloc uriname\n");
-				return MMFILE_FORMAT_FAIL;
-			}
-
-			memset (*urifilename, 0x00, MMFILE_MMAP_URI_LEN + filename_len + 1);
-			strncpy (*urifilename, MMFILE_MMAP_URI, MMFILE_MMAP_URI_LEN);
-			strncat (*urifilename, fileName, filename_len);
-			(*urifilename)[MMFILE_MMAP_URI_LEN + filename_len] = '\0';
+		memset (*urifilename, 0x00, MMFILE_MMAP_URI_LEN + filename_len + 1);
+		strncpy (*urifilename, MMFILE_MMAP_URI, MMFILE_MMAP_URI_LEN);
+		strncat (*urifilename, fileName, filename_len);
+		(*urifilename)[MMFILE_MMAP_URI_LEN + filename_len] = '\0';
 
 #else
-			*urifilename = mmfile_malloc (MMFILE_FILE_URI_LEN + filename_len + 1);
-			if (!*urifilename) {
-				debug_error ("error: mmfile_malloc uriname\n");
-				return MMFILE_FORMAT_FAIL;
-			}
-
-			memset (*urifilename, 0x00, MMFILE_FILE_URI_LEN + filename_len + 1);
-			strncpy (*urifilename, MMFILE_FILE_URI, MMFILE_FILE_URI_LEN);
-			strncat (*urifilename, fileName, filename_len);
-			(*urifilename)[MMFILE_FILE_URI_LEN + filename_len] = '\0';
-#endif
+		*urifilename = mmfile_malloc (MMFILE_FILE_URI_LEN + filename_len + 1);
+		if (!*urifilename) {
+			debug_error ("error: mmfile_malloc uriname\n");
+			return MMFILE_FORMAT_FAIL;
 		}
+
+		memset (*urifilename, 0x00, MMFILE_FILE_URI_LEN + filename_len + 1);
+		strncpy (*urifilename, MMFILE_FILE_URI, MMFILE_FILE_URI_LEN+1);
+		strncat (*urifilename, fileName, filename_len);
+		(*urifilename)[MMFILE_FILE_URI_LEN + filename_len] = '\0';
+#endif
 
 		///////////////////////////////////////////////////////////////////////
 		//                 Check File format                                 //
@@ -384,6 +354,20 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 				return MMFILE_FORMAT_SUCCESS;
 			}
 			skip_index = MM_FILE_FORMAT_QT;
+			goto PROBE_PROPER_FILE_TYPE;
+		} else if (strcasecmp (extansion_name, "flac") == 0) {
+			if (MMFileFormatIsValidFLAC (*urifilename)) {
+				*formatEnum = MM_FILE_FORMAT_FLAC;
+				return MMFILE_FORMAT_SUCCESS;
+			}
+			skip_index = MM_FILE_FORMAT_FLAC;
+			goto PROBE_PROPER_FILE_TYPE;
+		} else if (strcasecmp (extansion_name, "flv") == 0) {
+			if (MMFileFormatIsValidFLV (*urifilename)) {
+				*formatEnum = MM_FILE_FORMAT_FLV;
+				return MMFILE_FORMAT_SUCCESS;
+			}
+			skip_index = MM_FILE_FORMAT_FLV;
 			goto PROBE_PROPER_FILE_TYPE;
 		} else {
 			debug_warning ("probe file type=%s\n", fileName);
@@ -554,6 +538,42 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 				goto PROBE_PROPER_FILE_TYPE;
 			}
 
+			case MM_FILE_FORMAT_MATROSKA: {
+				if (MMFileFormatIsValidMatroska (*urifilename)) {
+					*formatEnum = MM_FILE_FORMAT_MATROSKA;
+					return MMFILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_MATROSKA;
+				goto PROBE_PROPER_FILE_TYPE;
+			}
+
+			case MM_FILE_FORMAT_QT: {
+				if (MMFileFormatIsValidMP4 (*urifilename)) {
+					*formatEnum = MM_FILE_FORMAT_QT;
+					return MMFILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_QT;
+				goto PROBE_PROPER_FILE_TYPE;
+			}
+
+			case MM_FILE_FORMAT_FLAC: {
+				if (MMFileFormatIsValidFLAC (*urifilename)) {
+					*formatEnum = MM_FILE_FORMAT_FLAC;
+					return MMFILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_FLAC;
+				goto PROBE_PROPER_FILE_TYPE;
+			}
+
+			case MM_FILE_FORMAT_FLV: {
+				if (MMFileFormatIsValidFLV (*urifilename)) {
+					*formatEnum = MM_FILE_FORMAT_FLV;
+					return MMFILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_FLV;
+				goto PROBE_PROPER_FILE_TYPE;
+			}
+
 			default: {
 				debug_warning ("probe fileformat type=%d (%d: autoscan)\n", fileSrc->memory.format, MM_FILE_FORMAT_INVALID);
 				skip_index = -1;
@@ -571,9 +591,12 @@ PROBE_PROPER_FILE_TYPE:
 		if (index == skip_index)
 			continue;
 
+		#ifdef __MMFILE_TEST_MODE__
 		debug_msg ("search index = [%d]\n", index);
+		#endif
+
 		switch (index) {
-		    case MM_FILE_FORMAT_QT:
+			case MM_FILE_FORMAT_QT:
 			case MM_FILE_FORMAT_3GP:
 			case MM_FILE_FORMAT_MP4: {
 				if (skip_index == MM_FILE_FORMAT_QT || skip_index == MM_FILE_FORMAT_3GP || skip_index == MM_FILE_FORMAT_MP4)
@@ -695,12 +718,29 @@ PROBE_PROPER_FILE_TYPE:
 				break;
 			}
 
+			case MM_FILE_FORMAT_FLAC: {
+				if (MMFileFormatIsValidFLAC (*urifilename)) {
+					*formatEnum = MM_FILE_FORMAT_FLAC;
+					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_FLAC;
+					return MMFILE_FORMAT_SUCCESS;
+				}
+				break;
+			}
+
+			case MM_FILE_FORMAT_FLV: {
+				if (MMFileFormatIsValidFLV (*urifilename)) {
+					*formatEnum = MM_FILE_FORMAT_FLV;
+					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_FLV;
+					return MMFILE_FORMAT_SUCCESS;
+				}
+				break;
+			}
+
 			/* not supported file */
 			case MM_FILE_FORMAT_NUT:
 			case MM_FILE_FORMAT_REAL:
 			case MM_FILE_FORMAT_AIFF:
 			case MM_FILE_FORMAT_AU:
-			case MM_FILE_FORMAT_FLV:
 			case MM_FILE_FORMAT_VOB:
 			case MM_FILE_FORMAT_JPG:
 				break;
@@ -719,7 +759,7 @@ PROBE_PROPER_FILE_TYPE:
 
 }
 
-static int _mmfile_format_close (MMFileFormatContext *formatContext)
+static int _mmfile_format_close (MMFileFormatContext *formatContext, bool clean_all)
 {
 	if (NULL == formatContext) {
 		debug_error ("error: invalid params\n");
@@ -731,47 +771,7 @@ static int _mmfile_format_close (MMFileFormatContext *formatContext)
 		formatContext->Close = NULL;
 	}
 
-	if (formatContext->ReadFrame)	formatContext->ReadFrame	= NULL;
-	if (formatContext->ReadStream)	formatContext->ReadStream	= NULL;
-	if (formatContext->ReadTag)		formatContext->ReadTag		= NULL;
-	if (formatContext->Close)		formatContext->Close		= NULL;
-
-	if (formatContext->uriFileName)		mmfile_free(formatContext->uriFileName);
-	if (formatContext->title)			mmfile_free(formatContext->title);
-	if (formatContext->artist)			mmfile_free(formatContext->artist);
-	if (formatContext->author)			mmfile_free(formatContext->author);
-	if (formatContext->copyright)		mmfile_free(formatContext->copyright);
-	if (formatContext->comment)			mmfile_free(formatContext->comment);
-	if (formatContext->album)			mmfile_free(formatContext->album);
-	if (formatContext->year)			mmfile_free(formatContext->year);
-	if (formatContext->genre)			mmfile_free(formatContext->genre);
-	if (formatContext->composer)		mmfile_free(formatContext->composer);
-	if (formatContext->classification)	mmfile_free(formatContext->classification);
-	if (formatContext->artwork)			mmfile_free(formatContext->artwork);
-	if (formatContext->conductor)		mmfile_free(formatContext->conductor);
-	if (formatContext->unsyncLyrics)		mmfile_free(formatContext->unsyncLyrics);
-	if (formatContext->syncLyrics)			mm_file_free_synclyrics_list(formatContext->syncLyrics);
-	if (formatContext->artworkMime)		mmfile_free(formatContext->artworkMime);
-	if (formatContext->recDate) 		mmfile_free(formatContext->recDate);
-
-	if (formatContext->privateFormatData)	mmfile_free(formatContext->privateFormatData);
-	if (formatContext->privateCodecData)	mmfile_free(formatContext->privateCodecData);
-
-	if (formatContext->nbStreams > 0) {
-		int i = 0;
-		for (i = 0; i < MAXSTREAMS; i++)
-			if (formatContext->streams[i]) mmfile_free(formatContext->streams[i]);
-	}
-
-	if (formatContext->thumbNail) {
-		if (formatContext->thumbNail->frameData)
-			mmfile_free (formatContext->thumbNail->frameData);
-
-		if (formatContext->thumbNail->configData)
-			mmfile_free (formatContext->thumbNail->configData);
-
-		mmfile_free (formatContext->thumbNail);
-	}
+	_CleanupFrameContext(formatContext, clean_all);
 
 	if (formatContext)
 		mmfile_free (formatContext);
@@ -834,7 +834,8 @@ int mmfile_format_open (MMFileFormatContext **formatContext, MMFileSourceType *f
 	if (MMFILE_FORMAT_FAIL == ret) {
 		debug_error ("error: Try other formats\n");
 		ret = MMFILE_FORMAT_FAIL;
-		goto find_valid_handler;
+//		goto find_valid_handler;
+		goto exception;
 	}
 
 	*formatContext = formatObject;
@@ -855,7 +856,7 @@ find_valid_handler:
 
 		ret = MMFileOpenFunc[index] (formatObject);
 		if (MMFILE_FORMAT_FAIL == ret) {
-			_CleanupFrameContext (formatObject);
+//			_CleanupFrameContext (formatObject, true);
 			continue;
 		}
 
@@ -866,6 +867,7 @@ find_valid_handler:
 
 	if (index == MM_FILE_FORMAT_NUM + 1 && MMFILE_FORMAT_FAIL == ret) {
 		debug_error ("can't find file format handler\n");
+		_CleanupFrameContext (formatObject, true);
 		ret = MMFILE_FORMAT_FAIL;
 		goto exception;
 	}
@@ -876,7 +878,7 @@ find_valid_handler:
 	return MMFILE_FORMAT_SUCCESS;
 
 exception:
-	_mmfile_format_close (formatObject);
+	_mmfile_format_close (formatObject, true);
 	*formatContext = NULL;
 
 	return ret;
@@ -919,63 +921,5 @@ int mmfile_format_read_tag (MMFileFormatContext *formatContext)
 EXPORT_API
 int mmfile_format_close (MMFileFormatContext *formatContext)
 {
-	if (NULL == formatContext) {
-		debug_error ("error: invalid params\n");
-		return MMFILE_FORMAT_FAIL;
-	}
-
-	if (formatContext->Close) {
-		formatContext->Close(formatContext);
-		formatContext->Close = NULL;
-	}
-
-	if (formatContext->ReadFrame)	formatContext->ReadFrame	= NULL;
-	if (formatContext->ReadStream)	formatContext->ReadStream	= NULL;
-	if (formatContext->ReadTag)		formatContext->ReadTag		= NULL;
-	if (formatContext->Close)		formatContext->Close		= NULL;
-
-	if (formatContext->uriFileName)		mmfile_free(formatContext->uriFileName);
-
-	if (formatContext->title)			mmfile_free(formatContext->title);
-	if (formatContext->artist)			mmfile_free(formatContext->artist);
-	if (formatContext->author)			mmfile_free(formatContext->author);
-	if (formatContext->copyright)		mmfile_free(formatContext->copyright);
-	if (formatContext->comment)			mmfile_free(formatContext->comment);
-	if (formatContext->album)			mmfile_free(formatContext->album);
-	if (formatContext->year)			mmfile_free(formatContext->year);
-	if (formatContext->genre)			mmfile_free(formatContext->genre);
-	if (formatContext->composer)		mmfile_free(formatContext->composer);
-	if (formatContext->classification)	mmfile_free(formatContext->classification);
-	if (formatContext->artwork)			mmfile_free(formatContext->artwork);
-	if (formatContext->artworkMime)			mmfile_free(formatContext->artworkMime);
-	if (formatContext->tagTrackNum)		mmfile_free(formatContext->tagTrackNum);
-	if (formatContext->rating)			mmfile_free(formatContext->rating);
-	if (formatContext->conductor)		mmfile_free(formatContext->conductor);
-	if (formatContext->unsyncLyrics) 		mmfile_free(formatContext->unsyncLyrics);
-	if (formatContext->recDate)			mmfile_free(formatContext->recDate);
-
-	if (formatContext->privateFormatData)	mmfile_free(formatContext->privateFormatData);
-	if (formatContext->privateCodecData)	mmfile_free(formatContext->privateCodecData);
-
-	if (formatContext->nbStreams > 0) {
-		int i = 0;
-		for (i = 0; i < MAXSTREAMS; i++)
-			if (formatContext->streams[i]) mmfile_free(formatContext->streams[i]);
-	}
-
-	if (formatContext->thumbNail) {
-		if (formatContext->thumbNail->frameData)
-			mmfile_free (formatContext->thumbNail->frameData);
-
-		if (formatContext->thumbNail->configData)
-			mmfile_free (formatContext->thumbNail->configData);
-
-		mmfile_free (formatContext->thumbNail);
-	}
-
-	if (formatContext)
-		mmfile_free (formatContext);
-
-	return MMFILE_FORMAT_SUCCESS;
+	return _mmfile_format_close(formatContext, false);
 }
-

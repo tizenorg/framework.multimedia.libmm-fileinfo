@@ -63,20 +63,22 @@ EXPORT_API
 void mmfile_format_print_tags (MMFileFormatContext *in)
 {
 	if (in) {
-		if (in->title)			debug_msg ("title = %s\n", in->title);
-		if (in->artist)			debug_msg ("artist = %s\n", in->artist);
+		if (in->title)				debug_msg ("title = %s\n", in->title);
+		if (in->artist)				debug_msg ("artist = %s\n", in->artist);
 		if (in->author)			debug_msg ("author = %s\n", in->author);
-		if (in->composer)		debug_msg ("composer = %s\n", in->composer);
+		if (in->composer)			debug_msg ("composer = %s\n", in->composer);
 		if (in->album)			debug_msg ("album = %s\n", in->album);
-		if (in->copyright)		debug_msg ("copyright = %s\n", in->copyright);
-		if (in->comment)		debug_msg ("comment = %s\n", in->comment);
+		if (in->album_artist)			debug_msg ("album_artist = %s\n", in->album_artist);
+		if (in->copyright)			debug_msg ("copyright = %s\n", in->copyright);
+		if (in->comment)			debug_msg ("comment = %s\n", in->comment);
 		if (in->genre)			debug_msg ("genre = %s\n", in->genre);
-		if (in->year)			debug_msg ("year = %s\n", in->year);
+		if (in->year)				debug_msg ("year = %s\n", in->year);
 		if (in->recDate)			debug_msg ("recDate = %s\n", in->recDate);
-								debug_msg ("tagTrackNum = %d\n", in->tagTrackNum);
-								debug_msg ("artworksize = %d\n", in->artworkSize);                                
-		if (in->artwork)        debug_msg ("artwork = %p\n", in->artwork);
-		if (in->classification) debug_msg ("classification = %s\n", in->classification);
+		if (in->tagTrackNum)		debug_msg ("tagTrackNum = %s\n", in->tagTrackNum);
+		if (in->artworkMime)		debug_msg ("artworkMime = %s\n", in->artworkMime);
+								debug_msg ("artworksize = %d\n", in->artworkSize);
+		if (in->artwork)			debug_msg ("artwork = %p\n", in->artwork);
+		if (in->classification)		debug_msg ("classification = %s\n", in->classification);
 	}
 }
 

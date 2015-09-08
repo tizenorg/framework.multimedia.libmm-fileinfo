@@ -1,4 +1,4 @@
-/*
+﻿/*
  * libmm-fileinfo
  *
  * Copyright (c) 2000 - 2011 Samsung Electronics Co., Ltd. All rights reserved.
@@ -124,6 +124,7 @@ void _aac_init_handle(tMMFILE_AAC_HANDLE* privateData)
   privateData->tagInfo.author = NULL;
   privateData->tagInfo.artist = NULL;
   privateData->tagInfo.album = NULL;
+  privateData->tagInfo.album_artist = NULL;
   privateData->tagInfo.year = NULL;
   privateData->tagInfo.copyright = NULL;
   privateData->tagInfo.comment = NULL;
@@ -148,25 +149,34 @@ int _search_id3tag(tMMFILE_AAC_HANDLE* pData)
   mmfile_seek(pData->hFile, 0, MMFILE_SEEK_SET);
   readed = mmfile_read (pData->hFile, tagHeader, MP3_TAGv2_HEADER_LEN);
   if (MP3_TAGv2_HEADER_LEN != readed) {
+#ifdef __MMFILE_TEST_MODE__
+	debug_msg("Read Fail");
+#endif
     return MMFILE_AAC_PARSER_FAIL;
   }
   
   if (!IS_ID3V2_TAG(tagHeader)) {
+#ifdef __MMFILE_TEST_MODE__
+	debug_msg("No ID3 Tag");
+#endif
     goto search_end;
   }
 
   if (tagHeader[3] == 0xFF ||  tagHeader[4] == 0xFF ||
       tagHeader[6] >= 0x80 ||  tagHeader[7] >= 0x80 ||
 	    tagHeader[8] >= 0x80 ||  tagHeader[9] >= 0x80) {
+#ifdef __MMFILE_TEST_MODE__
+	debug_msg("Read Fail");
+#endif
     return MMFILE_AAC_PARSER_FAIL;
   }
       
   pData->tagVersion = tagHeader[3];
 
   if(pData->tagVersion > 4) {
-	#ifdef __MMFILE_TEST_MODE__
-    debug_msg("\nTag version not supported");
-	#endif
+#ifdef __MMFILE_TEST_MODE__
+	debug_msg("\nTag version not supported");
+#endif
     return MMFILE_AAC_PARSER_FAIL;
   }
 
@@ -177,6 +187,9 @@ int _search_id3tag(tMMFILE_AAC_HANDLE* pData)
                          ((encSize & 0x007F0000) >> 2) | ((encSize & 0x7F000000) >> 3));                             
 
   if(pData->tagInfoSize > pData->streamInfo.fileSize) {
+#ifdef __MMFILE_TEST_MODE__
+	debug_msg("Invalid size");
+#endif
     return MMFILE_AAC_PARSER_FAIL;
   }
             
@@ -212,23 +225,26 @@ int _parse_id3_tag(tMMFILE_AAC_HANDLE* pData)
 
   readed = mmfile_read(pData->hFile, tagBuff, hTag->fileLen);
   if (readed != hTag->fileLen) {
-    debug_error ("faied to read. %d, %lld\n", readed, hTag->fileLen);
+    debug_error ("failed to read. %d, %lld\n", readed, hTag->fileLen);
     goto failure;
   }
  
   switch(hTag->tagV2Info.tagVersion) {
-   	case 1:
-      ret = mm_file_id3tag_parse_v110(hTag, tagBuff);
-      break;
-    case 2:
-      ret = mm_file_id3tag_parse_v222(hTag, tagBuff);
-      break;
-    case 3:
-      ret = mm_file_id3tag_parse_v223(hTag, tagBuff);
-      break;
-    case 4:
-      ret = mm_file_id3tag_parse_v224(hTag, tagBuff);
-      break;
+	case 1:
+		ret = mm_file_id3tag_parse_v110(hTag, tagBuff);
+		break;
+	case 2:
+		ret = mm_file_id3tag_parse_v222(hTag, tagBuff);
+		break;
+	case 3:
+		ret = mm_file_id3tag_parse_v223(hTag, tagBuff);
+		break;
+	case 4:
+		ret = mm_file_id3tag_parse_v224(hTag, tagBuff);
+		break;
+	default:
+		debug_error ("Invalid Tag version [%d]\n", hTag->tagV2Info.tagVersion);
+		break;
   }
 
   if(ret == FALSE) {
@@ -243,9 +259,10 @@ int _parse_id3_tag(tMMFILE_AAC_HANDLE* pData)
   pData->tagInfo.author = hTag->pAuthor;
   pData->tagInfo.artist = hTag->pArtist;
   pData->tagInfo.album = hTag->pAlbum;
+  pData->tagInfo.album_artist = hTag->pAlbum_Artist;
   pData->tagInfo.year = hTag->pYear;
   pData->tagInfo.copyright = hTag->pCopyright;
-  pData->tagInfo.comment = hTag->pDescription;
+  pData->tagInfo.comment = hTag->pComment;
   pData->tagInfo.genre = hTag->pGenre;
   pData->tagInfo.tracknum = hTag->pTrackNum;
   pData->tagInfo.composer = hTag->pComposer;
@@ -684,26 +701,31 @@ int mmfile_aacparser_get_stream_info (MMFileAACHandle handle, tMMFILE_AAC_STREAM
 
 int mmfile_aacparser_get_tag_info (MMFileAACHandle handle, tMMFILE_AAC_TAG_INFO *tagInfo)
 {
-  tMMFILE_AAC_HANDLE *privateData = NULL;
-  int ret = 0;
-  
-  if (NULL == handle || NULL == tagInfo) {
-    debug_error ("handle is NULL\n");
-    return MMFILE_AAC_PARSER_FAIL;
-  }
+	tMMFILE_AAC_HANDLE *privateData = NULL;
+	int ret = 0;
 
-  privateData = (tMMFILE_AAC_HANDLE *) handle;
-  
-  ret = _parse_id3_tag(privateData);
-  if(ret == MMFILE_AAC_PARSER_FAIL) {
-    debug_warning ("Error in parsing the Tag info\n");
-    return ret;
-  }
-  
-  // Return the tag info structure
-  memcpy(tagInfo, &(privateData->tagInfo), sizeof(tMMFILE_AAC_TAG_INFO));
-  
-  return MMFILE_AAC_PARSER_SUCCESS;
+	if (NULL == handle || NULL == tagInfo) {
+		debug_error ("handle is NULL\n");
+		return MMFILE_AAC_PARSER_FAIL;
+	}
+
+	privateData = (tMMFILE_AAC_HANDLE *) handle;
+	if(privateData->id3Handle.tagV2Info.tagVersion == 0)
+	{
+		debug_warning ("There is no Tag info\n");
+		return MMFILE_AAC_PARSER_SUCCESS;
+	}
+
+	ret = _parse_id3_tag(privateData);
+	if(ret == MMFILE_AAC_PARSER_FAIL) {
+		debug_warning ("Error in parsing the Tag info\n");
+		return ret;
+	}
+
+	// Return the tag info structure
+	memcpy(tagInfo, &(privateData->tagInfo), sizeof(tMMFILE_AAC_TAG_INFO));
+
+	return MMFILE_AAC_PARSER_SUCCESS;
 }
 
 
@@ -851,34 +873,36 @@ int mmfile_format_read_tag_aac (MMFileFormatContext *formatContext)
   }
 
   if(aacinfo.title)
-    formatContext->title = mmfile_strdup(aacinfo.title); 
+    formatContext->title = mmfile_strdup(aacinfo.title);
   if(aacinfo.author)
     formatContext->author = mmfile_strdup(aacinfo.author);
-  if(aacinfo.artist) 
-    formatContext->artist = mmfile_strdup(aacinfo.artist); 
-  if(aacinfo.album) 
+  if(aacinfo.artist)
+    formatContext->artist = mmfile_strdup(aacinfo.artist);
+  if(aacinfo.album)
     formatContext->album = mmfile_strdup(aacinfo.album);
-  if(aacinfo.year) 
+  if(aacinfo.album_artist)
+    formatContext->album_artist = mmfile_strdup(aacinfo.album_artist);
+  if(aacinfo.year)
     formatContext->year = mmfile_strdup(aacinfo.year);
-  if(aacinfo.copyright) 
-    formatContext->copyright = mmfile_strdup(aacinfo.copyright); 
-  if(aacinfo.comment) 
+  if(aacinfo.copyright)
+    formatContext->copyright = mmfile_strdup(aacinfo.copyright);
+  if(aacinfo.comment)
     formatContext->comment = mmfile_strdup(aacinfo.comment);
-  if(aacinfo.genre) 
+  if(aacinfo.genre)
     formatContext->genre = mmfile_strdup(aacinfo.genre);
   if(aacinfo.tracknum)
     formatContext->tagTrackNum= mmfile_strdup(aacinfo.tracknum);
-  if(aacinfo.composer) 
+  if(aacinfo.composer)
     formatContext->composer = mmfile_strdup(aacinfo.composer);
-  if(aacinfo.classification) 
+  if(aacinfo.classification)
     formatContext->classification = mmfile_strdup(aacinfo.classification);
-  if(aacinfo.rating) 
+  if(aacinfo.rating)
     formatContext->rating = mmfile_strdup(aacinfo.rating);	/*not exist rating tag in id3*/
-  if(aacinfo.conductor) 
+  if(aacinfo.conductor)
     formatContext->conductor = mmfile_strdup(aacinfo.conductor);
-  if(aacinfo.artworkMime) 
+  if(aacinfo.artworkMime)
     formatContext->artworkMime = mmfile_strdup(aacinfo.artworkMime);
-  if(aacinfo.artwork) { 
+  if(aacinfo.artwork) {
     formatContext->artworkSize = aacinfo.artworkSize;
     formatContext->artwork = mmfile_malloc(aacinfo.artworkSize);
     if(formatContext->artwork == NULL) {
@@ -912,7 +936,7 @@ int mmfile_format_read_frame_aac (MMFileFormatContext *formatContext,
 EXPORT_API
 int mmfile_format_close_aac (MMFileFormatContext *formatContext)
 {
-  MMFileAACHandle  handle = NULL;  
+  MMFileAACHandle  handle = NULL;
   int ret = MMFILE_FORMAT_FAIL;
    
   if (NULL == formatContext ) {

@@ -60,6 +60,7 @@ typedef struct _mmfileaactaginfo {
   char *author;
   char *artist;
   char *album;
+  char *album_artist;
   char *year;
   char *copyright;
   char *comment;

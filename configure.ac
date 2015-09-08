@@ -48,15 +48,9 @@ PKG_CHECK_MODULES(MMCOMMON,mm-common)
 AC_SUBST(MMCOMMON_CFLAGS)
 AC_SUBST(MMCOMMON_LIBS)
 
-#PKG_CHECK_MODULES(MMMHAL,mm-mhal)
-#AC_SUBST(MMMHAL_CFLAGS)
-#AC_SUBST(MMMHAL_LIBS)
-
 PKG_CHECK_MODULES(MMLOG,mm-log)
 AC_SUBST(MMLOG_CFLAGS)
 AC_SUBST(MMLOG_LIBS)
-
-
 
 PKG_CHECK_MODULES(GLIB, glib-2.0)
 AC_SUBST(GLIB_CFLAGS)
@@ -65,7 +59,6 @@ AC_SUBST(GLIB_LIBS)
 PKG_CHECK_MODULES(GTK, gtk+-2.0, [HAVE_GTK=yes], [HAVE_GTK=no])
 AC_SUBST(GTK_CFLAGS)
 AC_SUBST(GTK_LIBS)
-
 
 PKG_CHECK_MODULES(AVCODEC, libavcodec)
 AC_SUBST(AVCODEC_CFLAGS)
@@ -83,22 +76,14 @@ PKG_CHECK_MODULES(SWSCALE, libswscale)
 AC_SUBST(SWSCALE_CFLAGS)
 AC_SUBST(SWSACLE_LIBS)
 
-dnl use drm  --------------------------------------------------------------------------
-AC_ARG_ENABLE(drm, AC_HELP_STRING([--enable-drm], [using drm]),
-[
-   case "${enableval}" in
-       yes) USE_DRM=yes ;;
-        no) USE_DRM=no ;;
-         *) AC_MSG_ERROR(bad value ${enableval} for --enable-drm) ;;
-   esac
-],[USE_DRM=yes])
-if test "x$USE_DRM" = "xyes"; then
-     PKG_CHECK_MODULES(DRMCLIENT, drm-client)
-     AC_SUBST(DRMCLIENT_CFLAGS)
-     AC_SUBST(DRMCLIENT_LIBS)
-fi
-AM_CONDITIONAL(USE_DRM, test "x$USE_DRM" = "xyes")
- 
+PKG_CHECK_MODULES(ICU, icu-i18n)
+AC_SUBST(ICU_CFLAGS)
+AC_SUBST(ICU_LIBS)
+
+PKG_CHECK_MODULES(VCONF, vconf)
+AC_SUBST(VCONF_CFLAGS)
+AC_SUBST(VCONF_LIBS)
+
 dnl use dyn --------------------------------------------------------------------------
 AC_ARG_ENABLE(dyn, AC_HELP_STRING([--enable-dyn], [using dyn]),
 [

@@ -20,5 +20,7 @@
  */
 
 #ifndef __MMFILE_DYN_LOADING__
-int mmfile_format_get_frame(const char* path, double timestamp, bool keyframe, unsigned char **data, int *size, int *width, int *height);
+int mmfile_format_get_frame(const char* path, double timestamp, bool is_accurate, unsigned char **frame, int *size, int *width, int *height);
+
+int mmfile_format_get_frame_from_memory(const void *data, unsigned int datasize, double timestamp, bool is_accurate, unsigned char **frame, int *size, int *width, int *height);
 #endif

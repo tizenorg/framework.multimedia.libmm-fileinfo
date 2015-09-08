@@ -19,12 +19,16 @@ libmmfile_utils_la_CFLAGS = -I$(srcdir)/include \
 		       -I$(srcdir)/../include \
 		       $(MMCOMMON_CFLAGS) \
 		       -D_LARGEFILE64_SOURCE \
-		       -D_FILE_OFFSET_BITS=64
+		       -D_FILE_OFFSET_BITS=64 \
+		       $(ICU_CFLAGS) \
+		       $(VCONF_CFLAGS)
 if USE_TESTMODE
 libmmfile_utils_la_CFLAGS += -D__MMFILE_TEST_MODE__
 endif  
 
-libmmfile_utils_la_LIBADD = $(MMCOMMON_LIBS)
+libmmfile_utils_la_LIBADD = $(MMCOMMON_LIBS) \
+			    $(ICU_LIBS) \
+			    $(VCONF_LIBS)
 
 libmmfile_utils_la_CFLAGS += $(MMLOG_CFLAGS) -DMMF_LOG_OWNER=0x040 -DMMF_DEBUG_PREFIX=\"MMF-FILE-UTILS\"
 libmmfile_utils_la_LIBADD += $(MMLOG_LIBS)

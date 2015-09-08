@@ -98,10 +98,11 @@ typedef enum {
 
 
 typedef enum {
-	AV_ID3V2_ISO_8859,
+	AV_ID3V2_ISO_8859 = 0,
 	AV_ID3V2_UTF16,
 	AV_ID3V2_UTF16_BE,
-	AV_ID3V2_UTF8
+	AV_ID3V2_UTF8,
+	AV_ID3V2_MAX
 	
 } AvID3v2EncodingType;
 
@@ -128,6 +129,7 @@ typedef struct{
 	bool	bTitleMarked;
 	bool	bArtistMarked;
 	bool	bAlbumMarked;
+	bool	bAlbum_ArtistMarked;
 	bool	bYearMarked;
 	bool	bDescriptionMarked;
 	bool	bGenreMarked;
@@ -153,7 +155,7 @@ typedef struct
 	int		artistLen;
 	int		authorLen;
 	int		copyrightLen;
-	int		descriptionLen;
+	//int		descriptionLen;	/*ID3tag official tag name is "COMM" and meaning "Comment"*/
 	int		commentLen;
 	int		ratingLen;
 	int		albumLen;
@@ -201,10 +203,11 @@ typedef struct
 	char			*pArtist;		//Lead performer(s)/Soloist(s), 
 	char			*pAuthor;		//Author
 	char			*pCopyright;
-	char			*pDescription;
-	char			*pComment;		//Same to Description. Apps use Description. So replace this to Description  for ID3V2 Tag
+	//char			*pDescription;	/*ID3tag official tag name is "COMM" and meaning "Comment"*/
+	char			*pComment;
 	char			*pRating;
 	char			*pAlbum;		//Album/Movie/
+	char			*pAlbum_Artist;
 	char			*pYear;
 	char			*pGenre; 
 	char			*pTrackNum;		//Track number/Position in set
@@ -244,10 +247,11 @@ inline static void mm_file_free_AvFileContentInfo (AvFileContentInfo *pInfo)
 		if (pInfo->pArtist) mmfile_free (pInfo->pArtist);
 		if (pInfo->pAuthor) mmfile_free (pInfo->pAuthor);
 		if (pInfo->pCopyright) mmfile_free (pInfo->pCopyright);
-		if (pInfo->pDescription) mmfile_free (pInfo->pDescription);
+		//if (pInfo->pDescription) mmfile_free (pInfo->pDescription);
 		if (pInfo->pComment) mmfile_free (pInfo->pComment);
 		if (pInfo->pRating) mmfile_free (pInfo->pRating);
 		if (pInfo->pAlbum) mmfile_free (pInfo->pAlbum);
+		if (pInfo->pAlbum_Artist) mmfile_free (pInfo->pAlbum_Artist);
 		if (pInfo->pYear) mmfile_free (pInfo->pYear);
 		if (pInfo->pGenre) mmfile_free (pInfo->pGenre); 
 		if (pInfo->pTrackNum) mmfile_free (pInfo->pTrackNum);
@@ -272,7 +276,6 @@ bool	mm_file_id3tag_parse_v222 (AvFileContentInfo* pInfo, unsigned char *buffer)
 bool	mm_file_id3tag_parse_v223 (AvFileContentInfo* pInfo, unsigned char *buffer);
 bool	mm_file_id3tag_parse_v224 (AvFileContentInfo* pInfo, unsigned char *buffer);
 void mm_file_id3tag_restore_content_info (AvFileContentInfo* pInfo);
-
 
 #ifdef __cplusplus
 }

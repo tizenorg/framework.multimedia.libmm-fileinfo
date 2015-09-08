@@ -88,7 +88,9 @@ int mmfile_format_open_mp3 (MMFileFormatContext *formatContext)
     AvFileContentInfo *privateData = NULL;;
     int ret = 0;
 
+#ifdef __MMFILE_TEST_MODE__
 	debug_fenter();
+#endif
 	
     if (NULL == formatContext)
     {
@@ -142,7 +144,10 @@ EXPORT_API
 int mmfile_format_read_stream_mp3 (MMFileFormatContext *formatContext)
 {
     AvFileContentInfo *privateData = NULL;
+
+#ifdef __MMFILE_TEST_MODE__
 	debug_fenter();
+#endif
 
     if (!formatContext || !formatContext->privateFormatData)
     {
@@ -186,7 +191,10 @@ EXPORT_API
 int mmfile_format_read_tag_mp3    (MMFileFormatContext *formatContext)
 {
     AvFileContentInfo *privateData = NULL;
+
+#ifdef __MMFILE_TEST_MODE__
 	debug_fenter();
+#endif
 
     if (!formatContext || !formatContext->privateFormatData)
     {
@@ -196,33 +204,46 @@ int mmfile_format_read_tag_mp3    (MMFileFormatContext *formatContext)
 
     privateData = formatContext->privateFormatData;
 
-    if (privateData->pTitle)				formatContext->title = mmfile_strdup(privateData->pTitle);
-    if (privateData->pArtist)				formatContext->artist = mmfile_strdup(privateData->pArtist);
-    if (privateData->pAuthor)			formatContext->author = mmfile_strdup(privateData->pAuthor);
-    if (privateData->pCopyright)			formatContext->copyright = mmfile_strdup(privateData->pCopyright);
-    if (privateData->pDescription)		formatContext->comment = mmfile_strdup(privateData->pDescription);
-    if (privateData->pAlbum)         		formatContext->album = mmfile_strdup(privateData->pAlbum);
-    if (privateData->pYear)          		formatContext->year = mmfile_strdup(privateData->pYear);
-    if (privateData->pGenre)         		formatContext->genre = mmfile_strdup(privateData->pGenre);
-    if (privateData->pTrackNum)      	formatContext->tagTrackNum = mmfile_strdup(privateData->pTrackNum);
-    if (privateData->pComposer)      	formatContext->composer = mmfile_strdup(privateData->pComposer);
-    if (privateData->pContentGroup)  	formatContext->classification = mmfile_strdup(privateData->pContentGroup);
-    if (privateData->pConductor)     		formatContext->conductor = mmfile_strdup(privateData->pConductor);
-	if (privateData->pUnsyncLyrics)   	formatContext->unsyncLyrics= mmfile_strdup(privateData->pUnsyncLyrics);
-	if (privateData->pSyncLyrics)   		formatContext->syncLyrics= privateData->pSyncLyrics;
-	if (privateData->syncLyricsNum)   	formatContext->syncLyricsNum= privateData->syncLyricsNum;
-	if (privateData->pRecDate) 	   		formatContext->recDate= mmfile_strdup(privateData->pRecDate);
+	if (privateData->pTitle)				formatContext->title = mmfile_strdup(privateData->pTitle);
+	if (privateData->pArtist)			formatContext->artist = mmfile_strdup(privateData->pArtist);
+	if (privateData->pAuthor)			formatContext->author = mmfile_strdup(privateData->pAuthor);
+	if (privateData->pCopyright)		formatContext->copyright = mmfile_strdup(privateData->pCopyright);
+	if (privateData->pComment)		formatContext->comment = mmfile_strdup(privateData->pComment);
+	if (privateData->pAlbum)			formatContext->album = mmfile_strdup(privateData->pAlbum);
+	if (privateData->pAlbum_Artist)			formatContext->album_artist = mmfile_strdup(privateData->pAlbum_Artist);
+	if (privateData->pYear)				formatContext->year = mmfile_strdup(privateData->pYear);
+	if (privateData->pGenre)			formatContext->genre = mmfile_strdup(privateData->pGenre);
+	if (privateData->pTrackNum)		formatContext->tagTrackNum = mmfile_strdup(privateData->pTrackNum);
+	if (privateData->pComposer)		formatContext->composer = mmfile_strdup(privateData->pComposer);
+	if (privateData->pContentGroup)	formatContext->classification = mmfile_strdup(privateData->pContentGroup);
+	if (privateData->pConductor)		formatContext->conductor = mmfile_strdup(privateData->pConductor);
+	if (privateData->pUnsyncLyrics)		formatContext->unsyncLyrics= mmfile_strdup(privateData->pUnsyncLyrics);
+	if (privateData->pSyncLyrics)		formatContext->syncLyrics= privateData->pSyncLyrics;
+	if (privateData->syncLyricsNum)		formatContext->syncLyricsNum= privateData->syncLyricsNum;
+	if (privateData->pRecDate)			formatContext->recDate= mmfile_strdup(privateData->pRecDate);
 
-    formatContext->artwork = mmfile_malloc (privateData->imageInfo.imageLen);
-    if ((privateData->imageInfo.imageLen > 0) && formatContext->artwork)
-    {
-		formatContext->artworkSize = privateData->imageInfo.imageLen;
-		memcpy (formatContext->artwork, privateData->imageInfo.pImageBuf, privateData->imageInfo.imageLen);
-		if (strlen(privateData->imageInfo.imageMIMEType) > 0)
-			formatContext->artworkMime= mmfile_strdup(privateData->imageInfo.imageMIMEType);
-    }
-    
-    return MMFILE_FORMAT_SUCCESS;    
+	if(privateData->imageInfo.imageLen > 0)
+	{
+		formatContext->artwork = mmfile_malloc (privateData->imageInfo.imageLen);
+		if(formatContext->artwork)
+		{
+			formatContext->artworkSize = privateData->imageInfo.imageLen;
+			memcpy (formatContext->artwork, privateData->imageInfo.pImageBuf, privateData->imageInfo.imageLen);
+			if (strlen(privateData->imageInfo.imageMIMEType) > 0)
+				formatContext->artworkMime= mmfile_strdup(privateData->imageInfo.imageMIMEType);
+			else if(strlen(privateData->imageInfo.imageExt) > 0) {
+				#ifdef __MMFILE_TEST_MODE__
+				debug_msg("ID3 tag V2 File");
+				#endif
+				formatContext->artworkMime= mmfile_strdup(privateData->imageInfo.imageExt);
+			}
+			else {
+				debug_error("Album art image exist but there is no type information of album art\n");
+			}
+		}
+	}
+
+	return MMFILE_FORMAT_SUCCESS;
 }
 
 EXPORT_API
@@ -305,10 +326,19 @@ __AvGetXingHeader( AvXHeadData* headData,  unsigned char *buf )
 			buf += (9+4);
 	}
 
-	if( buf[0] != 'X' ) return 0;    // fail
-	if( buf[1] != 'i' ) return 0;    // header not found
-	if( buf[2] != 'n' ) return 0;
-	if( buf[3] != 'g' ) return 0;
+	/* There could be 2 attrs in this header : Xing or Info */
+	if (buf[0] == 'X') {
+		if( buf[1] != 'i' ) return 0;
+		if( buf[2] != 'n' ) return 0;
+		if( buf[3] != 'g' ) return 0;
+	} else if (buf[0] == 'I') {
+		if( buf[1] != 'n' ) return 0;
+		if( buf[2] != 'f' ) return 0;
+		if( buf[3] != 'o' ) return 0;
+	} else {
+		return 0;
+	}
+
 	buf += 4;
 
 	headData->hId = hId;
@@ -569,42 +599,63 @@ __AvParseXingHeader( AvFileContentInfo* pInfo, unsigned char* buf )
 	AvXHeadData data;
 	memset( &data, 0x00, sizeof(AvXHeadData) );
 
-	//	1. Xing Header üũ
+	//	1. Xing Header
+	/* There could be 2 attrs in this header : Xing or Info */
 	if((pInfo->mpegVersion == AV_MPEG_VER_1) && (pInfo->channels == 2))
 	{
-		if( buf[36] != 'X' ) return false;   
-		if( buf[37] != 'i' ) return false;   
-		if( buf[38] != 'n' ) return false;
-		if( buf[39] != 'g' ) return false;
+		if (buf[36] =='X') {
+			if( buf[37] != 'i' ) return false;
+			if( buf[38] != 'n' ) return false;
+			if( buf[39] != 'g' ) return false;
+		} else if (buf[36] == 'I') {
+			if( buf[37] != 'n' ) return false;
+			if( buf[38] != 'f' ) return false;
+			if( buf[39] != 'o' ) return false;
+		} else {
+			return false;
+		}
 	}
 	else
-	if((pInfo->mpegVersion == AV_MPEG_VER_2) && (pInfo->channels == 1))
+	if((pInfo->mpegVersion == AV_MPEG_VER_2 || pInfo->mpegVersion == AV_MPEG_VER_25) && (pInfo->channels == 1))
 	{
-		if( buf[13] != 'X' ) return false;   
-		if( buf[14] != 'i' ) return false;   
-		if( buf[15] != 'n' ) return false;
-		if( buf[16] != 'g' ) return false;
+		if (buf[13] =='X') {
+			if( buf[14] != 'i' ) return false;
+			if( buf[15] != 'n' ) return false;
+			if( buf[16] != 'g' ) return false;
+		} else if (buf[13] == 'I') {
+			if( buf[14] != 'n' ) return false;
+			if( buf[15] != 'f' ) return false;
+			if( buf[16] != 'o' ) return false;
+		} else {
+			return false;
+		}
 	}
 	else
 	{
-		if( buf[21] != 'X' ) return false;
-		if( buf[22] != 'i' ) return false;
-		if( buf[23] != 'n' ) return false;
-		if( buf[24] != 'g' ) return false;
+		if (buf[21] =='X') {
+			if( buf[22] != 'i' ) return false;
+			if( buf[23] != 'n' ) return false;
+			if( buf[24] != 'g' ) return false;
+		} else if (buf[21] == 'I') {
+			if( buf[22] != 'n' ) return false;
+			if( buf[23] != 'f' ) return false;
+			if( buf[24] != 'o' ) return false;
+		} else {
+			return false;
+		}
 	}
 
-	//	2. TOC�� ����ұ�?
+	//	2. TOC
 	if ( pInfo->pToc )
 		data.toc = (unsigned char *)(pInfo->pToc);
 
-	if ( __AvGetXingHeader( &data, (unsigned char *)buf ) == 1 ) // VBR�̴�.
+	if ( __AvGetXingHeader( &data, (unsigned char *)buf ) == 1 ) // VBR.
 	{
 		if (data.sampRate == 0 || data.bytes == 0 || data.frames == 0) {
 			debug_error ("invalid Xing header\n");
 			return false;
 		}
-	
-		pInfo->sampleRate = data.sampRate;
+
 		pInfo->datafileLen = data.bytes;
 		pInfo->frameNum = data.frames;
 		pInfo->frameSize = (int) ( (float) data.bytes / (float) data.frames )  ;
@@ -621,7 +672,7 @@ __AvParseVBRIHeader( AvFileContentInfo* pInfo, unsigned char* buf )
 	AvVBRIHeadData data;
 	memset( &data, 0x00, sizeof(AvVBRIHeadData) );
 
-	//	1. Xing Header üũ
+	//	1. Xing Header
 	if((pInfo->mpegVersion == AV_MPEG_VER_1) && (pInfo->channels == 2))
 	{
 		if( buf[36] != 'V' ) return false;   
@@ -645,11 +696,11 @@ __AvParseVBRIHeader( AvFileContentInfo* pInfo, unsigned char* buf )
 		if( buf[39] != 'I' ) return false;	
 	}
 
-	//	2. TOC�� ����ұ�?
+	//	2. TOC
 	if ( pInfo->pToc )
 		data.toc = (unsigned char*)(pInfo->pToc);
 
-	if ( __AvGetVBRIHeader( &data, (unsigned char*)buf ) == 1 ) // VBR�̴�.
+	if ( __AvGetVBRIHeader( &data, (unsigned char*)buf ) == 1 ) // VBR.
 	{
 		if (data.sampRate == 0 || data.bytes == 0 || data.frames == 0) {
 			debug_error ("invalid Vbri header\n");
@@ -1115,19 +1166,19 @@ static int mmf_file_mp3_get_infomation (char *filename, AvFileContentInfo* pInfo
 {
 	MMFileIOHandle	*hFile;
 	unsigned char	header[256];
-	unsigned long   numOfFrames=0;
 	unsigned long   frameSamples=0;
 	unsigned char	*buf = NULL;	
 	unsigned char*	v2TagExistCheck = NULL;
-	unsigned int 		tempNumFrames = 0;
 	int 	readAmount = 0, readedDataLen = 0;
-  	unsigned long long 	tempduration = 0;
 	unsigned char	TagBuff[MP3TAGINFO_SIZE + TAGV1_SEEK_GAP];
 	unsigned char		TagV1ID[4] = { 0x54, 0x41, 0x47}; //TAG
 	int		tagHeaderPos = 0;
 	int ret = 0;
 	unsigned int head_offset = 0;
+
+#ifdef __MMFILE_TEST_MODE__
 	debug_fenter();
+#endif
 	
 	if (pInfo == NULL || filename == NULL)
 		return -1;
@@ -1342,20 +1393,42 @@ static int mmf_file_mp3_get_infomation (char *filename, AvFileContentInfo* pInfo
 	if (mmfile_read (hFile, TagBuff, MP3TAGINFO_SIZE + TAGV1_SEEK_GAP) <= 0)
 		goto EXCEPTION;
 
-	if ((tagHeaderPos = __AvMemstr(TagBuff, TagV1ID, 3, TAGV1_SEEK_GAP+5)) >= 0)
-	{
-		#ifdef __MMFILE_TEST_MODE__
-		debug_msg ( "Mp3 File Tag is existing\n");
-		#endif
+		if ((tagHeaderPos = __AvMemstr(TagBuff, TagV1ID, 3, TAGV1_SEEK_GAP+5)) >= 0)
+		{
+			#ifdef __MMFILE_TEST_MODE__
+			debug_msg ( "Mp3 File Tag is existing\n");
+			#endif
 
-		pInfo ->bV1tagFound = true;
-		memcpy(TagBuff, (TagBuff + tagHeaderPos), MP3TAGINFO_SIZE);
-
-		if(!mm_file_id3tag_parse_v110(pInfo, TagBuff))
-			goto EXCEPTION;
-	}
+			pInfo ->bV1tagFound = true;
+			/* In this case, V2 Tag alreay exist So, ignore V1 tag  */
+			if (pInfo->tagV2Info.tagLen == 0) {
+				memcpy(TagBuff, (TagBuff + tagHeaderPos), MP3TAGINFO_SIZE);
+				if(!mm_file_id3tag_parse_v110(pInfo, TagBuff))
+					goto EXCEPTION;
+			}
+		}
 
 	mm_file_id3tag_restore_content_info (pInfo);
+
+	if(pInfo->mpegVersion== 1)
+	{
+		if(pInfo->layer== 1)
+			frameSamples = MPEG_1_SIZE_LAYER_1;
+		else
+			frameSamples = MPEG_1_SIZE_LAYER_2_3;
+	}
+	else
+	{
+		if(pInfo->layer == 1)
+			frameSamples = MPEG_2_SIZE_LAYER_1;
+		else
+			frameSamples = MPEG_2_SIZE_LAYER_2_3;
+	}
+
+#if 0
+	unsigned long   numOfFrames=0;
+	unsigned long long 	tempduration = 0;
+	unsigned int 		tempNumFrames = 0;
 
 	if(pInfo->bVbr) 
 		numOfFrames = pInfo->frameNum*10;
@@ -1365,8 +1438,6 @@ static int mmf_file_mp3_get_infomation (char *filename, AvFileContentInfo* pInfo
 		-(pInfo->headerPos + (pInfo ->bV1tagFound ? MP3TAGINFO_SIZE : 0) ) )*10) / pInfo->frameSize;
   	}
 	tempNumFrames = (unsigned int)(numOfFrames/10);
-
-	
 
 	if((numOfFrames - tempNumFrames * 10 ) > 5)
 		numOfFrames = (numOfFrames/10) + 1;
@@ -1392,6 +1463,10 @@ static int mmf_file_mp3_get_infomation (char *filename, AvFileContentInfo* pInfo
 			frameSamples = MPEG_2_SIZE_LAYER_2_3;
 	}
 
+#ifdef __MMFILE_TEST_MODE__
+	debug_msg("frameSamples : %d, tempduration : %ld", frameSamples, tempduration);
+#endif
+
 	if(tempduration < (unsigned long long)pInfo->sampleRate)
 	{
 		tempduration = (tempduration*frameSamples*10)/pInfo->sampleRate;
@@ -1401,6 +1476,18 @@ static int mmf_file_mp3_get_infomation (char *filename, AvFileContentInfo* pInfo
 		tempduration = (tempduration*frameSamples)/pInfo->sampleRate;
 
 	pInfo->duration = tempduration;
+#else
+	if(pInfo->bVbr) {
+		pInfo->duration =  ((double)(frameSamples * 1000) / pInfo->sampleRate) * pInfo->frameNum;
+		debug_msg("duration for VBR : %lld", pInfo->duration);
+	} else {
+		unsigned long long frame_duration = (((unsigned long long)frameSamples * 1000000000) / pInfo->sampleRate / 1000);
+		int file_size_except_header = pInfo->fileLen - (pInfo->headerPos + (pInfo->bV1tagFound ? MP3TAGINFO_SIZE : 0));
+		pInfo->duration = ((double)file_size_except_header / (double)pInfo->frameSize) * frame_duration / 1000;
+		//pInfo->duration = ((double)file_size_except_header / (double)pInfo->frameSize) * (frameSamples * 1000 / pInfo->sampleRate);
+		debug_msg("duration from new algorithm : %lld", pInfo->duration);
+	}
+#endif
 
 	mmfile_close(hFile);
 	
@@ -1419,6 +1506,7 @@ static int mmf_file_mp3_get_infomation (char *filename, AvFileContentInfo* pInfo
 	debug_msg ( "Title       : %s\n", pInfo->pTitle);
 	debug_msg ( "Artist      : %s\n", pInfo->pArtist);
 	debug_msg ( "Album       : %s\n", pInfo->pAlbum);
+	debug_msg ( "Album_Artist: %s\n", pInfo->pAlbum_Artist);
 	debug_msg ( "Year        : %s\n", pInfo->pYear);
 	debug_msg ( "Comment     : %s\n", pInfo->pComment);
 	debug_msg ( "TrackNum    : %s\n", pInfo->pTrackNum);
@@ -1426,7 +1514,7 @@ static int mmf_file_mp3_get_infomation (char *filename, AvFileContentInfo* pInfo
 	debug_msg ( "**** Info #2 ****\n");
 	debug_msg ( "Author      : %s\n", pInfo->pAuthor);
 	debug_msg ( "Copyright   : %s\n", pInfo->pCopyright);
-	debug_msg ( "Description : %s\n", pInfo->pDescription);
+	debug_msg ( "Comment : %s\n", pInfo->pComment);
 	debug_msg ( "Rating      : %s\n", pInfo->pRating);
 	debug_msg ( "RecDate     : %s\n", pInfo->pRecDate);
 	debug_msg ( "Encoded by  : %s\n", pInfo->pEncBy);

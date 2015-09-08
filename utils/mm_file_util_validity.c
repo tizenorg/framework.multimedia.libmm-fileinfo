@@ -44,6 +44,8 @@ static int _MMFileIsMMFHeader  (void *header);
 static int _MMFileIsIMYHeader  (void *header);
 static int _MMFileIsASFHeader  (void *header);
 static int _MMFileIsAMRHeader  (void *header);
+static int _MMFileIsFLACHeader  (void *header);
+static int _MMFileIsFLVHeader  (void *header);
 
 
 
@@ -86,7 +88,7 @@ int MMFileFormatIsValidMP3 (const char *mmfileuri, int frameCnt)
 	ret = _MMFileSearchID3Tag (fp, &sizeID3);
 	if (ret == 0) {
 		debug_error("Error in searching the ID3 tag\n");
-		goto exit;
+//		goto exit;
 	}
 
 	ret = 0;
@@ -153,6 +155,10 @@ int MMFileFormatIsValidMP3 (const char *mmfileuri, int frameCnt)
 				}
 			}
 		}
+
+		/*If j is zero, this loop is infinite */
+		if (j ==0) j++;
+
 		i = i + j;
 	}
 
@@ -221,7 +227,7 @@ int MMFileFormatIsValidAAC (const char *mmfileuri)
 	ret = _MMFileSearchID3Tag (fp, &sizeID3);
 	if (ret == 0) {
 		debug_error("Error in searching the ID3 tag\n");
-		goto exit;
+//		goto exit;
 	}
 
 	ret = 0;
@@ -293,6 +299,9 @@ int MMFileFormatIsValidAAC (const char *mmfileuri)
 				goto exit;
 			}
 		}
+		/*If j is zero, this loop is infinite */
+		if (j ==0) j++;
+
 		i = i + j;
 	}
 
@@ -365,7 +374,7 @@ int MMFileFormatIsValidOGG (const char *mmfileuri)
 	ret = _MMFileSearchID3Tag (fp, &sizeID3);
 	if(ret == 0) {
 		debug_error("Error in searching the ID3 tag\n");
-		goto exit;
+//		goto exit;
 	}
 
 	ret = 0;
@@ -1101,19 +1110,17 @@ exit:
 /***********************************************************************/
 /*                     Matroska Header Check API                       */
 /***********************************************************************/
-
 EXPORT_API
 int MMFileFormatIsValidMatroska (const char *mmfileuri)
 {
 #define _MMFILE_EBML_MARKER_LENGTH	4
+#define _MMFILE_MKV_READ_BUFFER_LENGTH 2048
 
 	MMFileIOHandle *fp = NULL;
 	unsigned char* buffer = NULL;
-	long long     filesize = 0;
 	int           readed = 0;
 	unsigned int  startoffset = 0;
 	int ret = 0;
-
 	int len_mask = 0x80, size = 1, n = 1, total = 0;
 	char probe_data[] = { 'm', 'a', 't', 'r', 'o', 's', 'k', 'a' };
 
@@ -1122,75 +1129,77 @@ int MMFileFormatIsValidMatroska (const char *mmfileuri)
 		return ret;
 	}
 
-	debug_msg ( "[%s][%d]\n", __func__, __LINE__);
 	ret = mmfile_open (&fp, mmfileuri, MMFILE_RDONLY);
 	if (ret == MMFILE_UTIL_FAIL) {
 		debug_error ("error: mmfile_open\n");
 		goto exit;
 	}
 
-	 /* Initialize the members of handle */
-	mmfile_seek (fp, 0, MMFILE_SEEK_END);
-	filesize = mmfile_tell(fp);
-	mmfile_seek (fp, 0, MMFILE_SEEK_SET);
+	buffer = mmfile_malloc (_MMFILE_MKV_READ_BUFFER_LENGTH * sizeof(char));
+	if (buffer == NULL) {
+		debug_error ( "buffer is null\n", readed);
+		ret = 0;
+		goto exit;
+	}
 
-	ret = 0;
-
-	/* set begin and end point at the file */
-	startoffset = 0;
-
-	mmfile_seek (fp, startoffset, MMFILE_SEEK_SET);
-
-	buffer = mmfile_malloc (_MMFILE_EBML_MARKER_LENGTH * sizeof(char));
-	readed = mmfile_read (fp, buffer, _MMFILE_EBML_MARKER_LENGTH);
-	if (_MMFILE_EBML_MARKER_LENGTH != readed) {
+	readed = mmfile_read (fp, buffer, _MMFILE_MKV_READ_BUFFER_LENGTH);
+	if (_MMFILE_MKV_READ_BUFFER_LENGTH != readed) {
 		debug_error ( "read error. size = %d. Maybe end of file.\n", readed);
 		ret = 0;
 		goto exit;
 	}
 
 	/* ebml header? */
-	  if (buffer[0] != 0x1A || buffer[1] != 0x45 || buffer[2] != 0xDF || buffer[3] != 0xA3) {
+	if (buffer[0] != 0x1A || buffer[1] != 0x45 || buffer[2] != 0xDF || buffer[3] != 0xA3) {
+#ifdef __MMFILE_TEST_MODE__
 		debug_msg ("This is not a EBML format\n");
-	    ret = 0;
-	    goto exit;
-	  }
+#endif
+		ret = 0;
+		goto exit;
+	}
 
-	  /* length of header */
-	    mmfile_read (fp, (unsigned char*)(&total), 1);
-	    debug_msg ("Initial total header size = [0x%x]\n", total);
+	/* length of header */
+	total = buffer[4];
+#ifdef __MMFILE_TEST_MODE__
+	debug_msg ("Initial total header size = [0x%x]\n", total);
+#endif
 
-	    while (size <= 8 && !(total & len_mask)) {
-	      debug_error ("This case can not be handled yet....")
-	      size++;
-	      len_mask >>= 1;
-	    }
-	    if (size > 8) {
-	    	debug_error ("This case can not be handled yet....")
-	    	ret = 0;
-	    	goto exit;
-	    }
-	    total &= (len_mask - 1);
-	    while (n < size) {
-	      debug_error ("This case can not be handled yet....")
-	      ret = 0;
-	      goto exit;
-	    }
+	while (size <= 8 && !(total & len_mask)) {
+		debug_error ("This case can not be handled yet....");
+		size++;
+		len_mask >>= 1;
+	}
 
-	    debug_msg ("Final total header size = [%d]\n", total);
+#ifdef __MMFILE_TEST_MODE__
+	debug_msg ("Final total header size = [%d]\n", total);
+#endif
 
-	    if (buffer)
-	    	mmfile_free (buffer);
-	    buffer = mmfile_malloc (total * sizeof(char));
-	    mmfile_read (fp, buffer, total);
+	if (size > 8) {
+		debug_error ("This case can not be handled yet....");
+		ret = 0;
+		goto exit;
+	}
 
-	    for (n = 0; n <= total - sizeof (probe_data); n++) {
-	      if (!memcmp (&buffer[n], probe_data, sizeof (probe_data))) {
-	    	debug_msg ("String matroska found!!!\n");
-	        ret = 1;
-	        goto exit;
-	      }
-	    }
+	total &= (len_mask - 1);
+
+	while (n < size) {
+		total = (total << 8) | buffer[4 + n++];
+		debug_error ("This case can not be handled yet....");
+	}
+
+	/* Does the probe data contain the whole header? */
+	if (_MMFILE_MKV_READ_BUFFER_LENGTH < 4 + size + total)
+		return 0;
+
+	for (n = 4+size ; n <= 4+size+total - sizeof (probe_data); n++) {
+		if (!memcmp (&buffer[n], probe_data, sizeof (probe_data))) {
+#ifdef __MMFILE_TEST_MODE__
+			debug_msg ("String matroska found!!!\n");
+#endif
+			ret = 1;
+			goto exit;
+		}
+	}
 
 exit:
 	if (buffer) {
@@ -1213,6 +1222,141 @@ int MMFileFormatIsValidQT (const char *mmfileuri)
 	return 1;
 }
 
+/***********************************************************************/
+/*                     Flac Header Check API                       */
+/***********************************************************************/
+EXPORT_API
+int MMFileFormatIsValidFLAC (const char *mmfileuri)
+{
+#define _MMFILE_FLAC_HEADER_LENGTH 5	/*fLaC*/
+
+	MMFileIOHandle *fp = NULL;
+	unsigned char buffer[_MMFILE_FLAC_HEADER_LENGTH] = {0,};
+	long long	  filesize = 0;
+	int 		  readed = 0;
+	unsigned int  startoffset = 0;
+	int ret = 0;
+
+	if (NULL == mmfileuri) {
+		debug_error ("file source is NULL\n");
+		return ret;
+	}
+
+	ret = mmfile_open (&fp, mmfileuri, MMFILE_RDONLY);
+	if (ret == MMFILE_UTIL_FAIL) {
+		debug_error ("error: mmfile_open\n");
+		goto exit;
+	}
+
+	/* Initialize the members of handle */
+	mmfile_seek (fp, 0, MMFILE_SEEK_END);
+	filesize = mmfile_tell(fp);
+	mmfile_seek (fp, 0, MMFILE_SEEK_SET);
+
+	if (filesize < _MMFILE_FLAC_HEADER_LENGTH) {
+		debug_error ( "header is too small.\n");
+		ret = 0;
+		goto exit;
+	}
+
+	ret = 0;
+
+	/* set begin and end point at the file */
+	startoffset = 0;
+
+	mmfile_seek (fp, startoffset, MMFILE_SEEK_SET);
+
+	readed = mmfile_read (fp, buffer, _MMFILE_FLAC_HEADER_LENGTH);
+	if (_MMFILE_FLAC_HEADER_LENGTH != readed) {
+		debug_error ( "read error. size = %d. Maybe end of file.\n", readed);
+		ret = 0;
+		goto exit;
+	}
+
+	if (1 == _MMFileIsFLACHeader (buffer)) {
+#ifdef __MMFILE_TEST_MODE__
+		debug_msg ( "Header Detected\n");
+#endif
+		ret = 1;
+		goto exit;
+	}
+
+
+exit:
+	if (fp) {
+		mmfile_close (fp);
+	}
+
+return ret;
+}
+
+/***********************************************************************/
+/*                     FLV(flash video) Header Check API                       */
+/***********************************************************************/
+EXPORT_API
+int MMFileFormatIsValidFLV (const char *mmfileuri)
+{
+#define _MMFILE_FLV_HEADER_LENGTH 4	/*FLV*/
+
+	MMFileIOHandle *fp = NULL;
+	unsigned char buffer[_MMFILE_FLV_HEADER_LENGTH] = {0,};
+	long long	  filesize = 0;
+	int 		  readed = 0;
+	unsigned int  startoffset = 0;
+	int ret = 0;
+
+	if (NULL == mmfileuri) {
+		debug_error ("file source is NULL\n");
+		return ret;
+	}
+
+	ret = mmfile_open (&fp, mmfileuri, MMFILE_RDONLY);
+	if (ret == MMFILE_UTIL_FAIL) {
+		debug_error ("error: mmfile_open\n");
+		goto exit;
+	}
+
+	/* Initialize the members of handle */
+	mmfile_seek (fp, 0, MMFILE_SEEK_END);
+	filesize = mmfile_tell(fp);
+	mmfile_seek (fp, 0, MMFILE_SEEK_SET);
+
+	if (filesize < _MMFILE_FLV_HEADER_LENGTH) {
+		debug_error ( "header is too small.\n");
+		ret = 0;
+		goto exit;
+	}
+
+	ret = 0;
+
+	/* set begin and end point at the file */
+	startoffset = 0;
+
+	mmfile_seek (fp, startoffset, MMFILE_SEEK_SET);
+
+	readed = mmfile_read (fp, buffer, _MMFILE_FLV_HEADER_LENGTH);
+	if (_MMFILE_FLV_HEADER_LENGTH != readed) {
+		debug_error ( "read error. size = %d. Maybe end of file.\n", readed);
+		ret = 0;
+		goto exit;
+	}
+
+	if (1 == _MMFileIsFLVHeader (buffer)) {
+#ifdef __MMFILE_TEST_MODE__
+		debug_msg ( "Header Detected\n");
+#endif
+		ret = 1;
+		goto exit;
+	}
+
+
+exit:
+	if (fp) {
+		mmfile_close (fp);
+	}
+
+return ret;
+}
 
 /***********************************************************************/
 /*            Implementation of Internal Functions                     */
@@ -1475,6 +1619,7 @@ static int _MMFileSearchID3Tag (MMFileIOHandle *fp, unsigned int *offset)
 	int tagVersion = 0;
 	int encSize = 0;
 	int readed = 0;
+	int ret = 0;
 
 	/*init offset*/
 	*offset = 0;
@@ -1533,9 +1678,33 @@ _START_TAG_SEARCH:
 
 	mmfile_seek(fp, acc_tagsize, MMFILE_SEEK_SET);
 	*offset = acc_tagsize;
+
+	ret = 1;
+
 	goto _START_TAG_SEARCH;
 
 search_end:
-	return 1;
+	return ret;
 }
 
+static int _MMFileIsFLACHeader  (void *header)
+{
+	unsigned char *s = header;
+
+	if (!memcmp(s, "fLaC", 4)) {
+		return 1;
+	}
+
+	return 0;
+}
+
+static int _MMFileIsFLVHeader  (void *header)
+{
+	unsigned char *s = header;
+
+	if (!memcmp(s, "FLV", 3)) {
+		return 1;
+	}
+
+	return 0;
+}

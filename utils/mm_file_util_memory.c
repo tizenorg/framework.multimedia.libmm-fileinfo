@@ -32,7 +32,9 @@ void *mmfile_malloc_debug (unsigned int size, const char *func, unsigned int lin
 
 	if (tmp) {
 		memset (tmp, 0x00, size);
-		fprintf (stderr, "## DEBUG ## %p = malloc (%d) by %s() %d\n", tmp, size, func, line);
+		#ifdef __MMFILE_TEST_MODE__
+		debug_msg("## DEBUG ## %p = malloc (%d) by %s() %d\n", tmp, size, func, line);
+		#endif
 	}
 	return tmp;
 }
@@ -43,7 +45,9 @@ void *mmfile_calloc_debug (unsigned int nmemb, unsigned int size, const char *fu
 	void *tmp = calloc (nmemb, size);
 
 	if (tmp) {
-		fprintf (stderr, "## DEBUG ## %p = calloc (%d, %d) by %s() %d\n", tmp, nmemb, size, func, line);
+		#ifdef __MMFILE_TEST_MODE__
+		debug_msg("## DEBUG ## %p = calloc (%d, %d) by %s() %d\n", tmp, nmemb, size, func, line);
+		#endif
 	}
 	return tmp;
 }
@@ -52,7 +56,9 @@ EXPORT_API
 void mmfile_free_debug (void *ptr, const char *func, unsigned int line)
 {
 	if (ptr) {
-		fprintf (stderr, "## DEBUG ## free (%p) by %s() %d\n", ptr, func, line);
+		#ifdef __MMFILE_TEST_MODE__
+		debug_msg("## DEBUG ## free (%p) by %s() %d\n", ptr, func, line);
+		#endif
 		free (ptr);
 	}
 }
@@ -64,7 +70,9 @@ void *mmfile_realloc_debug (void *ptr, unsigned int size, const char *func, unsi
 	void *tmp = realloc (ptr, size);
 
 	if (tmp) {
-		fprintf (stderr, "## DEBUG ## %p = realloc (%p, %d) by %s() %d\n", tmp, ptr, size, func, line);
+		#ifdef __MMFILE_TEST_MODE__
+		debug_msg("## DEBUG ## %p = realloc (%p, %d) by %s() %d\n", tmp, ptr, size, func, line);
+		#endif
 	}
 	return tmp;
 }
@@ -72,14 +80,18 @@ void *mmfile_realloc_debug (void *ptr, unsigned int size, const char *func, unsi
 EXPORT_API
 void *mmfile_memset_debug (void *s, int c, unsigned int n, const char *func, unsigned int line)
 {
-	fprintf (stderr, "## DEBUG ## memset (%p, %d, %d) by %s() %d\n", s, c, n, func, line);
+	#ifdef __MMFILE_TEST_MODE__
+	debug_msg("## DEBUG ## memset (%p, %d, %d) by %s() %d\n", s, c, n, func, line);
+	#endif
 	return memset (s, c, n);
 }
 
 EXPORT_API
 void *mmfile_memcpy_debug (void *dest, const void *src, unsigned int n, const char *func, unsigned int line)
 {
-	fprintf (stderr, "## DEBUG ## memcpy (%p, %p, %d) by %s() %d\n", dest, src, n, func, line);
+	#ifdef __MMFILE_TEST_MODE__
+	debug_msg("## DEBUG ## memcpy (%p, %p, %d) by %s() %d\n", dest, src, n, func, line);
+	#endif
 	return memcpy (dest, src, n);
 }
 

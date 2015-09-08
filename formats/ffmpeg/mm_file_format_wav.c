@@ -222,12 +222,33 @@ int mmfile_format_open_wav (MMFileFormatContext *formatContext)
 	return MMFILE_FORMAT_SUCCESS;
 }
 
+static bool __check_uhqa(int sample_rate,  short bits_per_sample)
+{
+	bool ret = FALSE;
+
+#ifdef __MMFILE_TEST_MODE__
+	debug_error("[sample rate %d, sample format %d]", sample_rate, bits_per_sample);
+#endif
+
+	if ((sample_rate >= 44100) && (bits_per_sample >= 24)) {
+#ifdef __MMFILE_TEST_MODE__
+		debug_msg("UHQA CONTENT");
+#endif
+		ret = TRUE;
+	} else {
+		ret = FALSE;
+	}
+
+	return ret;
+}
 
 EXPORT_API
 int mmfile_format_read_stream_wav (MMFileFormatContext *formatContext)
 {
 	unsigned char *header = NULL;
 	MM_FILE_WAVE_INFO *waveinfo = NULL;
+	long long     filesize = 0;
+	MMFileIOHandle *fp = NULL;
 	int ret = 0;
 
 	if (formatContext == NULL) {
@@ -255,9 +276,24 @@ int mmfile_format_read_stream_wav (MMFileFormatContext *formatContext)
 
 	mmfile_free (header);
 
+	 /* Get file size. because sometimes waveinfo->size is wrong */
+	ret = mmfile_open (&fp, formatContext->uriFileName, MMFILE_RDONLY);
+	if(fp) {
+		mmfile_seek (fp, 0, MMFILE_SEEK_END);
+		filesize = mmfile_tell(fp);
+		mmfile_seek (fp, 0, MMFILE_SEEK_SET);
+		mmfile_close (fp);
+	}
+
 	formatContext->privateFormatData = waveinfo;
 
-	formatContext->duration = (int)(((float)(waveinfo->size) / (float)(waveinfo->byte_rate)) * 1000.0F);
+	if(waveinfo->size > filesize) {
+		/*Wrong information*/
+		formatContext->duration = (int)((((float)filesize - MMF_FILE_WAVE_HEADER_LEN) / (float)(waveinfo->byte_rate)) * 1000.0F);
+	} else {
+		formatContext->duration = (int)(((float)(waveinfo->size) / (float)(waveinfo->byte_rate)) * 1000.0F);
+	}
+
 	formatContext->audioTotalTrackNum = 1;
 	formatContext->nbStreams = 1;
 	formatContext->streams[MMFILE_AUDIO_STREAM] = mmfile_malloc (sizeof(MMFileFormatStream));
@@ -294,6 +330,8 @@ int mmfile_format_read_stream_wav (MMFileFormatContext *formatContext)
 	formatContext->streams[MMFILE_AUDIO_STREAM]->nbChannel = waveinfo->channel;
 	formatContext->streams[MMFILE_AUDIO_STREAM]->framePerSec = 0;
 	formatContext->streams[MMFILE_AUDIO_STREAM]->samplePerSec = waveinfo->sample_rate;
+	formatContext->streams[MMFILE_AUDIO_STREAM]->bitPerSample = waveinfo->bits_per_sample;
+	formatContext->streams[MMFILE_AUDIO_STREAM]->is_uhqa = __check_uhqa(waveinfo->sample_rate, waveinfo->bits_per_sample);
 
 	return MMFILE_FORMAT_SUCCESS;
 

@@ -2720,7 +2720,9 @@ _mmf_MALoad(	unsigned char* pbFile, unsigned int dFSize)
 /* check playback time			*/
 	if (sdResult != AV_MMF_FUNC_SUCCESS)		return sdResult;
 
+	#ifdef __MMFILE_TEST_MODE__
 	debug_msg ( "SUM %ld\n", psLoad_Info->dPlayTime * psLoad_Info->dTimeBase);
+	#endif
 
 	if ((psLoad_Info->dPlayTime * psLoad_Info->dTimeBase) <= AV_MMF_PLAY_TIME_MIN)
 	{
@@ -2810,7 +2812,7 @@ _mmf_ParseSkipXmf2Mmf(unsigned char* pbFile, unsigned int dFSize)
 		memcpy(cmpXmfCMMD, pbFile, 4);
 	else
 	{
-		debug_msg ( "NULL pointer!\n");
+		debug_error ( "NULL pointer!\n");
 		return -1;
 	}
 
@@ -2822,7 +2824,9 @@ _mmf_ParseSkipXmf2Mmf(unsigned char* pbFile, unsigned int dFSize)
 		{
 			if (pbFile[skipVal] == 'M' && pbFile[skipVal+1] == 'M' && pbFile[skipVal+2] == 'M' && pbFile[skipVal+3] == 'D')
 			{
+				#ifdef __MMFILE_TEST_MODE__
 				debug_msg ( "MMMD Header found!\n");
+				#endif
 				break;
 			}
 			else
@@ -2830,7 +2834,9 @@ _mmf_ParseSkipXmf2Mmf(unsigned char* pbFile, unsigned int dFSize)
 				skipVal++;
 				if (skipVal >= sizeOfpbFile)
 				{
+					#ifdef __MMFILE_TEST_MODE__
 					debug_msg ( "MMMD Header is not found!\n");
+					#endif
 					return -1;
 				}
 			}
@@ -2838,9 +2844,15 @@ _mmf_ParseSkipXmf2Mmf(unsigned char* pbFile, unsigned int dFSize)
 		}
 	}
 	else
+	{
+		#ifdef __MMFILE_TEST_MODE__
 		debug_msg ( "File header is not started CMMD\n");
+		#endif
+	}
 
+	#ifdef __MMFILE_TEST_MODE__
 	debug_msg ( "skip value: %d\n", skipVal);
+	#endif
 
 	return skipVal;
 }
@@ -2862,7 +2874,9 @@ mmf_file_mmf_get_duration (char *src, int is_xmf)
 	/*total time (millisecond)*/
 	int	ret_msec = 0;
 
-	debug_msg ( "\n");
+#ifdef __MMFILE_TEST_MODE__
+	debug_fenter();
+#endif
 
 	/*open*/
 	ret = mmfile_open (&fp, src, MMFILE_RDONLY);
@@ -2878,7 +2892,7 @@ mmf_file_mmf_get_duration (char *src, int is_xmf)
 	mmfile_seek (fp, 0L, MMFILE_SEEK_SET);
 
 	if (src_size <= 0) {
-		debug_msg ( "failed to get file size.\n");
+		debug_error ( "failed to get file size.\n");
 		ret_msec = -1;
 		goto _RELEASE_RESOURCE;
 	}

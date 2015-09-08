@@ -32,7 +32,7 @@ typedef struct _mmfileavmimetype
     char    extension[MMFILE_FILE_EXT_MAX_LEN];
 } MMFileAVMimeType;
 
-#define __FFMPEG_MIME_TABLE_SIZE 73
+#define __FFMPEG_MIME_TABLE_SIZE 75
 const MMFileAVMimeType MMFILE_FFMPEG_MIME_TABLE [] =
 {
     {"audio/mpeg",          "mp3",      "mp3"},
@@ -123,6 +123,9 @@ const MMFileAVMimeType MMFILE_FFMPEG_MIME_TABLE [] =
     {"audio/ogg",           "ogg",      "ogg"},
     {"audio/x-ogg",         "ogg",      "ogg"},
     {"audio/vorbis",        "ogg",      "ogg"},  //73
+
+	{"audio/x-flac",        "flac",      "flac"},  //74
+	{"video/x-flv",        "flv",      "flv"},  //75
 };
 
 

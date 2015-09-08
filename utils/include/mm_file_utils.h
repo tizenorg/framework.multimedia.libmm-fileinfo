@@ -85,6 +85,8 @@ int MMFileFormatIsValidWMV (const char *mmfileuri);
 int MMFileFormatIsValidOGG (const char *mmfileuri);
 int MMFileFormatIsValidMatroska (const char *mmfileuri);
 int MMFileFormatIsValidQT (const char *mmfileuri);
+int MMFileFormatIsValidFLAC (const char *mmfileuri);
+int MMFileFormatIsValidFLV (const char *mmfileuri);
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -171,6 +173,7 @@ char **mmfile_strsplit (const char *string, const char *delimiter);
 void mmfile_strfreev (char **str_array);
 int  mmfile_util_wstrlen (unsigned short *wText);
 short* mmfile_swap_2byte_string (short* mszOutput, short* mszInput, int length);
+char *mmfile_get_charset(const char *str);
 char *mmfile_string_convert (const char *str, unsigned int len,
                              const char *to_codeset, const char *from_codeset,
                              unsigned int *bytes_read,
@@ -362,17 +365,18 @@ typedef enum {
 
 
 typedef enum {
-	AV_ID3V2_ISO_8859,
+	AV_ID3V2_ISO_8859 = 0,
 	AV_ID3V2_UTF16,
 	AV_ID3V2_UTF16_BE,
-	AV_ID3V2_UTF8
+	AV_ID3V2_UTF8,
+	AV_ID3V2_MAX
 	
 } AvID3v2EncodingType;
 
 
 typedef struct{
 	char	*pImageBuf;
-	char	imageDescription[MP3_ID3_IMAGE_DESCRIPTION_MAX_LENGTH];
+	char	*imageDescription;
 	char	imageMIMEType[MP3_ID3_IMAGE_MIME_TYPE_MAX_LENGTH];
 	char	imageExt[MP3_ID3_IMAGE_EXT_MAX_LENGTH];
 	int		pictureType;
@@ -392,6 +396,7 @@ typedef struct{
 	bool	bTitleMarked;
 	bool	bArtistMarked;
 	bool	bAlbumMarked;
+	bool	bAlbum_ArtistMarked;
 	bool	bYearMarked;
 	bool	bDescriptionMarked;
 	bool	bGenreMarked;
@@ -422,15 +427,15 @@ typedef struct
 	int		authorLen;
 	int		copyrightLen;
 	int		descriptionLen;
-//	int		commentLen;
+	int		commentLen;
 	int		ratingLen;
 	int		albumLen;
 	int		yearLen;
 	int		genreLen;
 	int		tracknumLen;
 	int		recdateLen;
-	
 	int		conductorLen;
+	int		album_artistLen;
 	
 // for PC Studio Podcast
 	int 	contentGroupLen;
@@ -454,17 +459,17 @@ typedef struct
 	long long		duration;
 
 // for mp3 Info
-	char			*pToc;			// VBR�϶� SeekPosition�� ���ϱ� ���� TOC ���̺��� ������ ���?�ִ� char �迭 , 100 ����Ʈ ����
+	char			*pToc;			// VBR�϶� SeekPosition�� ���ϱ� ���� TOC ���̺��� ������ ��\EF\BF?�ִ� char �迭 , 100 ����Ʈ ����
 	unsigned int	mpegVersion;	// 1 : mpeg 1,    2 : mpeg 2, 3 : mpeg2.5
 	unsigned int	layer;			// 1 : layer1, 2 : layer2, 3 : layer3
 	unsigned int	channelIndex;	// 0 : stereo, 1 : joint_stereo, 2 : dual_channel, 3 : mono
 	unsigned int	objectType;
 	unsigned int	headerType;
 	long long		fileLen;		// mp3 ������ ��ü ����
-	long			headerPos;		// mp3 �����?ó������ ��Ÿ���� ��ġ
+	long			headerPos;		// mp3 ����\EF\BF?ó������ ��Ÿ���� ��ġ
 	long long		datafileLen;	// ID3Tag���� �����ϰ� ���� mp3 frame���� ���� ,  VBR�϶� XHEADDATA �� bytes �� �ش��Ѵ�
 	int				frameSize;		// mp3 frame �� ���� ũ��
-	int				frameNum;		// mp3 ���Ͽ� �������� � ����ִ°�?
+	int				frameNum;		// mp3 ���Ͽ� �������� � ����ִ°\EF\BF?
 	bool			bVbr;			// VBR mp3?
 	bool			bPadding;		// Padding?
 	bool			bV1tagFound;
@@ -474,9 +479,10 @@ typedef struct
 	char			*pAuthor;		//Author
 	char			*pCopyright;
 	char			*pDescription;
-	char			*pComment;		//Same to Description. Apps use Description. So replace this to Description  for ID3V2 Tag
+	char			*pComment;
 	char			*pRating;
 	char			*pAlbum;		//Album/Movie/
+	char			*pAlbum_Artist;
 	char			*pYear;
 	char			*pGenre; 
 	char			*pTrackNum;		//Track number/Position in set
@@ -532,6 +538,7 @@ inline static void mm_file_free_AvFileContentInfo (AvFileContentInfo *pInfo)
 		if (pInfo->pComment) mmfile_free (pInfo->pComment);
 		if (pInfo->pRating) mmfile_free (pInfo->pRating);
 		if (pInfo->pAlbum) mmfile_free (pInfo->pAlbum);
+		if (pInfo->pAlbum_Artist) mmfile_free (pInfo->pAlbum_Artist);
 		if (pInfo->pYear) mmfile_free (pInfo->pYear);
 		if (pInfo->pGenre) mmfile_free (pInfo->pGenre); 
 		if (pInfo->pTrackNum) mmfile_free (pInfo->pTrackNum);
@@ -542,10 +549,12 @@ inline static void mm_file_free_AvFileContentInfo (AvFileContentInfo *pInfo)
 		if (pInfo->pURL) mmfile_free (pInfo->pURL);
 		if (pInfo->pOriginArtist) mmfile_free (pInfo->pOriginArtist);
 		if (pInfo->pComposer) mmfile_free (pInfo->pComposer);
+		if (pInfo->pUnsyncLyrics) mmfile_free (pInfo->pUnsyncLyrics);
 		if (pInfo->imageInfo.pImageBuf) mmfile_free (pInfo->imageInfo.pImageBuf);
+		if (pInfo->imageInfo.imageDescription) mmfile_free (pInfo->imageInfo.imageDescription);
 		if (strlen(pInfo->imageInfo.imageMIMEType)>0) memset(pInfo->imageInfo.imageMIMEType, 0, MP3_ID3_IMAGE_MIME_TYPE_MAX_LENGTH);
 		if (pInfo->pTransactionID) mmfile_free (pInfo->pTransactionID);
-		if (pInfo->pUnsyncLyrics) mmfile_free (pInfo->pUnsyncLyrics);
+
 	}
 }
 
