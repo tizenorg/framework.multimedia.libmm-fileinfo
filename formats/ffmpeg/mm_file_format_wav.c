@@ -23,7 +23,7 @@
 #include <stdlib.h>	/*malloc*/
 
 #include <mm_error.h>
-#include "mm_debug.h"
+#include "mm_file_debug.h"
 
 #include "mm_file_utils.h"
 #include "mm_file_format_private.h"
@@ -46,8 +46,8 @@
  * 32      2     little  Block align
  * 34      2     little  Bit per sample
  */
- 
- 
+
+
 #define MMF_FILE_WAVE_CHUNK_LEN					12
 #define MMF_FILE_WAVE_SUBCHUNK_LEN				24
 #define MMF_FILE_WAVE_HEADER_LEN				(MMF_FILE_WAVE_CHUNK_LEN + MMF_FILE_WAVE_SUBCHUNK_LEN)
@@ -55,10 +55,10 @@
 #ifdef __MMFILE_TEST_MODE__
 typedef struct {
 	short	codec;		/**< WAVE form Registration Number*/
-	char	*name;		/**< WAVE form wFormatTag ID*/
+	const char	*name;		/**< WAVE form wFormatTag ID*/
 } MMF_FILE_WAVE_CODEC_NAME;
 
-MMF_FILE_WAVE_CODEC_NAME g_audio_cdc_tbl [] = {
+MMF_FILE_WAVE_CODEC_NAME g_audio_cdc_tbl[] = {
 	{ 0x0000, "WAVE_FORMAT_UNKNOWN" },
 	{ 0x0001, "WAVE_FORMAT_PCM" },
 	{ 0x0002, "WAVE_FORMAT_ADPCM" },
@@ -179,19 +179,19 @@ typedef struct {
 
 
 /* internal */
-static unsigned char *mmf_file_wave_get_header (char *src);
-static int mmf_file_wave_get_info (unsigned char *header, MM_FILE_WAVE_INFO *info);
+static unsigned char *mmf_file_wave_get_header(char *src);
+static int mmf_file_wave_get_info(unsigned char *header, MM_FILE_WAVE_INFO *info);
 
 
 /* mm plugin porting */
-int mmfile_format_read_stream_wav (MMFileFormatContext *formatContext);
-int mmfile_format_read_frame_wav  (MMFileFormatContext *formatContext, unsigned int timestamp, MMFileFormatFrame *frame);
-int mmfile_format_read_tag_wav    (MMFileFormatContext *formatContext);
-int mmfile_format_close_wav       (MMFileFormatContext *formatContext);
+int mmfile_format_read_stream_wav(MMFileFormatContext *formatContext);
+int mmfile_format_read_frame_wav(MMFileFormatContext *formatContext, unsigned int timestamp, MMFileFormatFrame *frame);
+int mmfile_format_read_tag_wav(MMFileFormatContext *formatContext);
+int mmfile_format_close_wav(MMFileFormatContext *formatContext);
 
 
 EXPORT_API
-int mmfile_format_open_wav (MMFileFormatContext *formatContext)
+int mmfile_format_open_wav(MMFileFormatContext *formatContext)
 {
 	int ret = 0;
 
@@ -201,11 +201,10 @@ int mmfile_format_open_wav (MMFileFormatContext *formatContext)
 	}
 
 	if (formatContext->pre_checked == 0) {
-		ret = MMFileFormatIsValidWAV (formatContext->uriFileName);
-		if ( ret == 0 )
-		{
+		ret = MMFileFormatIsValidWAV(NULL, formatContext->uriFileName);
+		if (ret == 0) {
 			debug_error("It is not wav file\n");
-			return MMFILE_FORMAT_FAIL;        
+			return MMFILE_FORMAT_FAIL;
 		}
 	}
 
@@ -243,7 +242,7 @@ static bool __check_uhqa(int sample_rate,  short bits_per_sample)
 }
 
 EXPORT_API
-int mmfile_format_read_stream_wav (MMFileFormatContext *formatContext)
+int mmfile_format_read_stream_wav(MMFileFormatContext *formatContext)
 {
 	unsigned char *header = NULL;
 	MM_FILE_WAVE_INFO *waveinfo = NULL;
@@ -253,41 +252,41 @@ int mmfile_format_read_stream_wav (MMFileFormatContext *formatContext)
 
 	if (formatContext == NULL) {
 		debug_error("formatContext is NULL\n");
-		return MMFILE_FORMAT_FAIL;    
+		return MMFILE_FORMAT_FAIL;
 	}
 
-	header = mmf_file_wave_get_header (formatContext->uriFileName);
+	header = mmf_file_wave_get_header(formatContext->uriFileName);
 	if (header == NULL) {
 		debug_error("error: mmf_file_wave_get_header\n");
 		goto exception;
 	}
 
-	waveinfo = mmfile_malloc (sizeof(MM_FILE_WAVE_INFO));
+	waveinfo = mmfile_malloc(sizeof(MM_FILE_WAVE_INFO));
 	if (waveinfo == NULL) {
 		debug_error("error: mmfile_malloc\n");
 		goto exception;
 	}
 
-	ret = mmf_file_wave_get_info (header, waveinfo);
+	ret = mmf_file_wave_get_info(header, waveinfo);
 	if (ret == -1) {
 		debug_error("error: mmf_file_wave_get_info\n");
 		goto exception;
 	}
 
-	mmfile_free (header);
+	mmfile_free(header);
 
-	 /* Get file size. because sometimes waveinfo->size is wrong */
-	ret = mmfile_open (&fp, formatContext->uriFileName, MMFILE_RDONLY);
-	if(fp) {
-		mmfile_seek (fp, 0, MMFILE_SEEK_END);
+	/* Get file size. because sometimes waveinfo->size is wrong */
+	ret = mmfile_open(&fp, formatContext->uriFileName, MMFILE_RDONLY);
+	if (fp) {
+		mmfile_seek(fp, 0, MMFILE_SEEK_END);
 		filesize = mmfile_tell(fp);
-		mmfile_seek (fp, 0, MMFILE_SEEK_SET);
-		mmfile_close (fp);
+		mmfile_seek(fp, 0, MMFILE_SEEK_SET);
+		mmfile_close(fp);
 	}
 
 	formatContext->privateFormatData = waveinfo;
 
-	if(waveinfo->size > filesize) {
+	if (waveinfo->size > filesize) {
 		/*Wrong information*/
 		formatContext->duration = (int)((((float)filesize - MMF_FILE_WAVE_HEADER_LEN) / (float)(waveinfo->byte_rate)) * 1000.0F);
 	} else {
@@ -296,11 +295,11 @@ int mmfile_format_read_stream_wav (MMFileFormatContext *formatContext)
 
 	formatContext->audioTotalTrackNum = 1;
 	formatContext->nbStreams = 1;
-	formatContext->streams[MMFILE_AUDIO_STREAM] = mmfile_malloc (sizeof(MMFileFormatStream));
+	formatContext->streams[MMFILE_AUDIO_STREAM] = mmfile_malloc(sizeof(MMFileFormatStream));
 
 	if (!formatContext->streams[MMFILE_AUDIO_STREAM]) {
 		debug_error("error: mmfile_malloc audio stream for wav\n");
-		return MMFILE_FORMAT_FAIL;        
+		return MMFILE_FORMAT_FAIL;
 	}
 
 	formatContext->streams[MMFILE_AUDIO_STREAM]->streamType = MMFILE_AUDIO_STREAM;
@@ -326,7 +325,7 @@ int mmfile_format_read_stream_wav (MMFileFormatContext *formatContext)
 			break;
 	}
 
-	formatContext->streams[MMFILE_AUDIO_STREAM]->bitRate = waveinfo->byte_rate*8;
+	formatContext->streams[MMFILE_AUDIO_STREAM]->bitRate = waveinfo->byte_rate * 8;
 	formatContext->streams[MMFILE_AUDIO_STREAM]->nbChannel = waveinfo->channel;
 	formatContext->streams[MMFILE_AUDIO_STREAM]->framePerSec = 0;
 	formatContext->streams[MMFILE_AUDIO_STREAM]->samplePerSec = waveinfo->sample_rate;
@@ -336,29 +335,29 @@ int mmfile_format_read_stream_wav (MMFileFormatContext *formatContext)
 	return MMFILE_FORMAT_SUCCESS;
 
 exception:
-	mmfile_free (header);
-	mmfile_free (waveinfo);
+	mmfile_free(header);
+	mmfile_free(waveinfo);
 
 	return MMFILE_FORMAT_FAIL;
 }
 
 
 EXPORT_API
-int mmfile_format_read_frame_wav (MMFileFormatContext *formatContext, unsigned int timestamp, MMFileFormatFrame *frame)
+int mmfile_format_read_frame_wav(MMFileFormatContext *formatContext, unsigned int timestamp, MMFileFormatFrame *frame)
 {
 	return MMFILE_FORMAT_SUCCESS;
 }
 
 
 EXPORT_API
-int mmfile_format_read_tag_wav (MMFileFormatContext *formatContext)
+int mmfile_format_read_tag_wav(MMFileFormatContext *formatContext)
 {
 	return MMFILE_FORMAT_SUCCESS;
 }
 
 
 EXPORT_API
-int mmfile_format_close_wav (MMFileFormatContext *formatContext)
+int mmfile_format_close_wav(MMFileFormatContext *formatContext)
 {
 	if (formatContext == NULL) {
 		debug_error("formatContext is NULL\n");
@@ -366,57 +365,58 @@ int mmfile_format_close_wav (MMFileFormatContext *formatContext)
 	}
 
 	if (formatContext->privateFormatData)
-		mmfile_free (formatContext->privateFormatData);
+		mmfile_free(formatContext->privateFormatData);
 
 	return MMFILE_FORMAT_SUCCESS;
 }
 
-static char*
-_dump_codec_name (short codec)
-{
 #ifdef __MMFILE_TEST_MODE__
-	int sz = sizeof (g_audio_cdc_tbl) / sizeof (MMF_FILE_WAVE_CODEC_NAME);
+static const char *
+_dump_codec_name(short codec)
+{
+	int sz = sizeof(g_audio_cdc_tbl) / sizeof(MMF_FILE_WAVE_CODEC_NAME);
 	int i;
-	
+
 	for (i = 0; i < sz; i++) {
 		if (g_audio_cdc_tbl[i].codec == codec) {
 			return g_audio_cdc_tbl[i].name;
 		}
 	}
-#endif
+
 	return NULL;
 }
+#endif
 
-static int _get_fmt_subchunk_offset (MMFileIOHandle *fp, long long limit, long long *offset)
+static int _get_fmt_subchunk_offset(MMFileIOHandle *fp, long long limit, long long *offset)
 {
 	long long fmt_offset;
 	int readed;
 	int i;
 	unsigned char buf[4];
 
-	fmt_offset = mmfile_tell (fp);
+	fmt_offset = mmfile_tell(fp);
 	if (fmt_offset < 0)
 		return 0;
 
 	for (i = 0; i < limit; i++) {
-		mmfile_seek (fp, fmt_offset + i, MMFILE_SEEK_SET);
-		readed = mmfile_read (fp, buf, 4);
+		mmfile_seek(fp, fmt_offset + i, MMFILE_SEEK_SET);
+		readed = mmfile_read(fp, buf, 4);
 		if (readed != 4) {
-			debug_error ( "failed to read. size = %d\n", readed);
+			debug_error("failed to read. size = %d\n", readed);
 			return 0;
 		}
-		
+
 		if (buf[0] == 'f' && buf[1] == 'm' && buf[2] == 't' && buf[3] == ' ') {
 			*offset = fmt_offset + i;
 			return 1;
 		}
 	}
-	
+
 	return 0;
 }
 
 static unsigned char *
-mmf_file_wave_get_header (char *src)
+mmf_file_wave_get_header(char *src)
 {
 	int				readed = 0;
 	MMFileIOHandle	*fp = NULL;
@@ -426,115 +426,115 @@ mmf_file_wave_get_header (char *src)
 	long long		offset = 0;
 	long long		limit;
 
-	header = mmfile_malloc (MMF_FILE_WAVE_HEADER_LEN);
+	header = mmfile_malloc(MMF_FILE_WAVE_HEADER_LEN);
 	if (!header)
 		return NULL;
 
 	/*open*/
-	ret = mmfile_open (&fp, src, MMFILE_RDONLY);
+	ret = mmfile_open(&fp, src, MMFILE_RDONLY);
 	if (ret == MMFILE_UTIL_FAIL) {
-		debug_error ( "open failed.\n");
+		debug_error("open failed.\n");
 		goto failed;
 	}
 
 
 	/*get file size*/
-	mmfile_seek (fp, 0L, MMFILE_SEEK_END);
-	src_size = mmfile_tell (fp);
-	mmfile_seek (fp, 0L, MMFILE_SEEK_SET);
+	mmfile_seek(fp, 0L, MMFILE_SEEK_END);
+	src_size = mmfile_tell(fp);
+	mmfile_seek(fp, 0L, MMFILE_SEEK_SET);
 
 	if (src_size < MMF_FILE_WAVE_HEADER_LEN) {
-		debug_error ( "header is too small.\n");
+		debug_error("header is too small.\n");
 		goto failed;
 	}
 
 	/*read chunk data*/
-	readed = mmfile_read (fp, header, MMF_FILE_WAVE_CHUNK_LEN);
+	readed = mmfile_read(fp, header, MMF_FILE_WAVE_CHUNK_LEN);
 	if (readed != MMF_FILE_WAVE_CHUNK_LEN) {
-		debug_error ( "read error. size = %d\n", readed);
+		debug_error("read error. size = %d\n", readed);
 		goto failed;
 	}
 
 	/*seach 'fmt ' sub chunk*/
 	limit = (src_size - MMF_FILE_WAVE_HEADER_LEN > 10240 ? 10240 : src_size - MMF_FILE_WAVE_HEADER_LEN);
-	ret = _get_fmt_subchunk_offset (fp, limit, &offset);
+	ret = _get_fmt_subchunk_offset(fp, limit, &offset);
 	if (ret == 0) {
-		debug_error ( "failed to seach 'fmt ' chunk\n");
+		debug_error("failed to seach 'fmt ' chunk\n");
 		goto failed;
 	}
 
-	#ifdef __MMFILE_TEST_MODE__
-	debug_msg ("fmt offset: %lld\n", offset);
-	#endif
-	
-	mmfile_seek (fp, offset, MMFILE_SEEK_SET);
-	
+#ifdef __MMFILE_TEST_MODE__
+	debug_msg("fmt offset: %lld\n", offset);
+#endif
+
+	mmfile_seek(fp, offset, MMFILE_SEEK_SET);
+
 	/*read sub chunk data*/
-	readed = mmfile_read (fp, header + MMF_FILE_WAVE_CHUNK_LEN, MMF_FILE_WAVE_SUBCHUNK_LEN);
+	readed = mmfile_read(fp, header + MMF_FILE_WAVE_CHUNK_LEN, MMF_FILE_WAVE_SUBCHUNK_LEN);
 	if (readed != MMF_FILE_WAVE_SUBCHUNK_LEN) {
-		debug_error ( "read error. size = %d\n", readed);
+		debug_error("read error. size = %d\n", readed);
 		goto failed;
 	}
 
-	mmfile_close (fp);
+	mmfile_close(fp);
 
 	return header;
 
 failed:
-	if (header) mmfile_free (header);
-	if (fp) mmfile_close (fp);
+	if (header) mmfile_free(header);
+	if (fp) mmfile_close(fp);
 
 	return NULL;
 }
 
 static int
-mmf_file_wave_get_info (unsigned char *header, MM_FILE_WAVE_INFO *info)
+mmf_file_wave_get_info(unsigned char *header, MM_FILE_WAVE_INFO *info)
 {
 	if (!header || !info) {
 		return -1;
 	}
 
 	/*get chunk size*/
-	info->size = *((int*)(header + 4));
-	
+	info->size = *((int *)(header + 4));
+
 	/*get format*/
-	info->format = *((short*)(header + 20));
+	info->format = *((short *)(header + 20));
 
 	/*get channel*/
-	info->channel = *((short*)(header + 22));
+	info->channel = *((short *)(header + 22));
 
 	/*get sampling-rate*/
-	info->sample_rate = *((int*)(header + 24));
+	info->sample_rate = *((int *)(header + 24));
 
 	/*get byte rate*/
-	info->byte_rate = *((int*)(header + 28));
+	info->byte_rate = *((int *)(header + 28));
 
 	/*get byte align*/
-	info->block_align = *((short*)(header + 32));
-	
+	info->block_align = *((short *)(header + 32));
+
 	/*get bits per sample*/
-	info->bits_per_sample = *((short*)(header + 34));
+	info->bits_per_sample = *((short *)(header + 34));
 
-	info->size				= mmfile_io_le_int32 (info->size);
-	info->format			= mmfile_io_le_int16 (info->format);
-	info->channel			= mmfile_io_le_int16 (info->channel);
-	info->sample_rate		= mmfile_io_le_int32 (info->sample_rate);
-	info->byte_rate			= mmfile_io_le_int32 (info->byte_rate);
-	info->block_align		= mmfile_io_le_int16 (info->block_align);
-	info->bits_per_sample	= mmfile_io_le_int16 (info->bits_per_sample);
+	info->size				= mmfile_io_le_int32(info->size);
+	info->format			= mmfile_io_le_int16(info->format);
+	info->channel			= mmfile_io_le_int16(info->channel);
+	info->sample_rate		= mmfile_io_le_int32(info->sample_rate);
+	info->byte_rate			= mmfile_io_le_int32(info->byte_rate);
+	info->block_align		= mmfile_io_le_int16(info->block_align);
+	info->bits_per_sample	= mmfile_io_le_int16(info->bits_per_sample);
 
-	#ifdef __MMFILE_TEST_MODE__
-	debug_msg ( "----------------------------------------------\n");
-	debug_msg ( "chunk size: %d\n", info->size);
-	debug_msg ( "WAVE form Registration Number: 0x%04X\n", info->format);
-	debug_msg ( "WAVE form wFormatTag ID: %s\n", _dump_codec_name (info->format));
-	debug_msg ( "channel: %d\n", info->channel);
-	debug_msg ( "sampling-rate: %d\n", info->sample_rate);
-	debug_msg ( "byte-rate: %d\n", info->byte_rate);
-	debug_msg ( "byte align: %d\n", info->block_align);
-	debug_msg ( "bit per sample: %d\n", info->bits_per_sample);
-	debug_msg ( "----------------------------------------------\n");
-	#endif
+#ifdef __MMFILE_TEST_MODE__
+	debug_msg("----------------------------------------------\n");
+	debug_msg("chunk size: %d\n", info->size);
+	debug_msg("WAVE form Registration Number: 0x%04X\n", info->format);
+	debug_msg("WAVE form wFormatTag ID: %s\n", _dump_codec_name(info->format));
+	debug_msg("channel: %d\n", info->channel);
+	debug_msg("sampling-rate: %d\n", info->sample_rate);
+	debug_msg("byte-rate: %d\n", info->byte_rate);
+	debug_msg("byte align: %d\n", info->block_align);
+	debug_msg("bit per sample: %d\n", info->bits_per_sample);
+	debug_msg("----------------------------------------------\n");
+#endif
 
 	return 0;
 

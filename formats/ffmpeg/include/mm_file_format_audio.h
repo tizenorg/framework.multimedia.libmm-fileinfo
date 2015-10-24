@@ -29,7 +29,7 @@
 #define MPEG_2_SIZE_LAYER_2_3	(MPEG_1_SIZE_LAYER_2_3 / 2)
 
 /* MP3 */
-#define MP3TAGINFO_SIZE		128         // file end 128 byte 
+#define MP3TAGINFO_SIZE		128         /* file end 128 byte  */
 #define FRAMES_FLAG			0x0001
 #define BYTES_FLAG			0x0002
 #define TOC_FLAG			0x0004
@@ -86,61 +86,61 @@
 #define AV_MP3HDR_EMPHASIS_M		0x03
 #define AV_MP3HDR_EMPHASIS_SHIFT	0
 
-#define MASK_MPEG		0x18	// 00011000
-#define MASK_MPEG_25	0x00	// 00000000
-#define MASK_MPEG_2		0x10	// 00010000
-#define MASK_MPEG_1		0x18	// 00011000
+#define MASK_MPEG		0x18	/* 00011000 */
+#define MASK_MPEG_25	0x00	/* 00000000 */
+#define MASK_MPEG_2		0x10	/* 00010000 */
+#define MASK_MPEG_1		0x18	/* 00011000 */
 
-#define MASK_LAYER		0x06	// 00000110
-#define MASK_LAYER_3	0x02	// 00000010
-#define MASK_LAYER_2	0x04	// 00000100
-#define MASK_LAYER_1	0x06	// 00000110
+#define MASK_LAYER		0x06	/* 00000110 */
+#define MASK_LAYER_3	0x02	/* 00000010 */
+#define MASK_LAYER_2	0x04	/* 00000100 */
+#define MASK_LAYER_1	0x06	/* 00000110 */
 
-#define MASK_CHANNEL	0xC0	// 11000000
-#define MASK_CHANNEL_ST	0x00	// 00000000
-#define MASK_CHANNEL_JS 0x40	// 01000000
-#define MASK_CHANNEL_DC	0x80	// 10000000
-#define MASK_CHANNEL_MN	0xC0	// 11000000
+#define MASK_CHANNEL	0xC0	/* 11000000 */
+#define MASK_CHANNEL_ST	0x00	/* 00000000 */
+#define MASK_CHANNEL_JS 0x40	/* 01000000 */
+#define MASK_CHANNEL_DC	0x80	/* 10000000 */
+#define MASK_CHANNEL_MN	0xC0	/* 11000000 */
 
-#define MASK_SAMPLERATE	0x0C	// 00001100
+#define MASK_SAMPLERATE	0x0C	/* 00001100 */
 
-#define MASK_PADDING	0x02	// 00000010
+#define MASK_PADDING	0x02	/* 00000010 */
 
-#define _AV_MP3_HEADER_POSITION_MAX		(50*1024) // mp3 header should be exist inside this size
-#define AV_MP3_HEADER_READ_MAX			200000 // mp3 header should be exist inside this size
+#define _AV_MP3_HEADER_POSITION_MAX		(50*1024) /* mp3 header should be exist inside this size */
+#define AV_MP3_HEADER_READ_MAX			200000 /* mp3 header should be exist inside this size */
 #define AV_WM_LOCALCODE_SIZE_MAX		2
 
 /*
  *	Xing Header Information
  */
-typedef struct{
-    int hId;				// from MPEG header, 0=MPEG2, 1=MPEG1
-    int sampRate;			// determined from MPEG header
-    int flags;				// from Xing header data
-    int frames;				// total bit stream frames from Xing header data
-    int bytes;				// total bit stream bytes from Xing header data
-    int vbrScale;			// encoded vbr scale from Xing header data
-    unsigned char *toc;		// pointer to unsigned char toc_buffer[100]
-							// may be NULL if toc not desired
+typedef struct {
+	int hId;				/* from MPEG header, 0=MPEG2, 1=MPEG1 */
+	int sampRate;			/* determined from MPEG header */
+	int flags;				/* from Xing header data */
+	int frames;				/* total bit stream frames from Xing header data */
+	int bytes;				/* total bit stream bytes from Xing header data */
+	int vbrScale;			/* encoded vbr scale from Xing header data */
+	unsigned char *toc;		/* pointer to unsigned char toc_buffer[100] */
+							/* may be NULL if toc not desired */
 } AvXHeadData;
 
-typedef struct{
-    int hId;				// from MPEG header, 0=MPEG2, 1=MPEG1
-    int vID;				// ver. ID
-    int sampRate;			// determined from MPEG header
-    float delay;			// delay
-    int qualityIndicator;	// qualityIndicator
-    int bytes;				// total bit stream bytes from Xing header data
-    int frames;				// total bit stream frames from Xing header data
-    int numOfTOC;			// numOfTOC
-    int vbriScale;			// encoded vbri scale from VBRI header data
-    int sizePerTable;		// encoded sizePerTable from VBRI header data
-    int framesPerTable;		//encoded framesPerTable from VBRI header data
-    unsigned char *toc;		// pointer to unsigned char toc_buffer[100]
-							// may be NULL if toc not desired
+typedef struct {
+	int hId;				/* from MPEG header, 0=MPEG2, 1=MPEG1 */
+	int vID;				/* ver. ID */
+	int sampRate;			/* determined from MPEG header */
+	float delay;			/* delay */
+	int qualityIndicator;	/* qualityIndicator */
+	int bytes;				/* total bit stream bytes from Xing header data */
+	int frames;				/* total bit stream frames from Xing header data */
+	int numOfTOC;			/* numOfTOC */
+	int vbriScale;			/* encoded vbri scale from VBRI header data */
+	int sizePerTable;		/* encoded sizePerTable from VBRI header data */
+	int framesPerTable;		/*encoded framesPerTable from VBRI header data */
+	unsigned char *toc;		/* pointer to unsigned char toc_buffer[100] */
+							/* may be NULL if toc not desired */
 } AvVBRIHeadData;
 
-typedef enum {  
+typedef enum {
 
 	AV_MPEG_VER_RESERVED,      /* Reserved                                      */
 	AV_MPEG_VER_1,             /* MPEG Version 1.0                              */
@@ -150,16 +150,16 @@ typedef enum {
 	AV_MPEG_VER_UNKNOWN        /* Unable to determine version information       */
 } AvMp3VerEnumType;
 
-typedef enum {  
+typedef enum {
 	AV_MP3_LAYER_RESERVED = 0,  /* Reserved                                    */
-	AV_MPEG2_LAYER_AAC = AV_MP3_LAYER_RESERVED,  /* MPEG2 AAC compression     */	
+	AV_MPEG2_LAYER_AAC = AV_MP3_LAYER_RESERVED,  /* MPEG2 AAC compression     */
 	AV_MP3_LAYER_1,             /* MPEG Layer 1 compression                    */
 	AV_MP3_LAYER_2,             /* MPEG Layer 2 compression                    */
 	AV_MP3_LAYER_3,             /* MPEG Layer 3 compression                    */
 	AV_MP3_LAYER_UNKNOWN        /* Unable to determine layer information       */
-}AvMpegLayerEnumType;
+} AvMpegLayerEnumType;
 
-typedef enum {  
+typedef enum {
 	AV_MP3_BITRATE_FREE = 0,   /* Free bitrate (determined by software)        */
 	AV_MP3_BITRATE_8K   = 8,   /* Fixed bitrates                               */
 	AV_MP3_BITRATE_16K  = 16,  /*                                              */

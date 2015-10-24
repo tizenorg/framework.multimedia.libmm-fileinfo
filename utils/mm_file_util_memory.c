@@ -26,117 +26,116 @@
 
 #ifdef __MMFILE_MEM_TRACE__
 EXPORT_API
-void *mmfile_malloc_debug (unsigned int size, const char *func, unsigned int line)
+void *mmfile_malloc_debug(unsigned int size, const char *func, unsigned int line)
 {
-	void *tmp = malloc (size);
+	void *tmp = malloc(size);
 
 	if (tmp) {
-		memset (tmp, 0x00, size);
-		#ifdef __MMFILE_TEST_MODE__
+		memset(tmp, 0x00, size);
+#ifdef __MMFILE_TEST_MODE__
 		debug_msg("## DEBUG ## %p = malloc (%d) by %s() %d\n", tmp, size, func, line);
-		#endif
+#endif
 	}
 	return tmp;
 }
 
 EXPORT_API
-void *mmfile_calloc_debug (unsigned int nmemb, unsigned int size, const char *func, unsigned int line)
+void *mmfile_calloc_debug(unsigned int nmemb, unsigned int size, const char *func, unsigned int line)
 {
-	void *tmp = calloc (nmemb, size);
+	void *tmp = calloc(nmemb, size);
 
 	if (tmp) {
-		#ifdef __MMFILE_TEST_MODE__
+#ifdef __MMFILE_TEST_MODE__
 		debug_msg("## DEBUG ## %p = calloc (%d, %d) by %s() %d\n", tmp, nmemb, size, func, line);
-		#endif
+#endif
 	}
 	return tmp;
 }
 
 EXPORT_API
-void mmfile_free_debug (void *ptr, const char *func, unsigned int line)
+void mmfile_free_debug(void *ptr, const char *func, unsigned int line)
 {
 	if (ptr) {
-		#ifdef __MMFILE_TEST_MODE__
+#ifdef __MMFILE_TEST_MODE__
 		debug_msg("## DEBUG ## free (%p) by %s() %d\n", ptr, func, line);
-		#endif
-		free (ptr);
+#endif
+		free(ptr);
 	}
 }
 
 
 EXPORT_API
-void *mmfile_realloc_debug (void *ptr, unsigned int size, const char *func, unsigned int line)
+void *mmfile_realloc_debug(void *ptr, unsigned int size, const char *func, unsigned int line)
 {
-	void *tmp = realloc (ptr, size);
+	void *tmp = realloc(ptr, size);
 
 	if (tmp) {
-		#ifdef __MMFILE_TEST_MODE__
+#ifdef __MMFILE_TEST_MODE__
 		debug_msg("## DEBUG ## %p = realloc (%p, %d) by %s() %d\n", tmp, ptr, size, func, line);
-		#endif
+#endif
 	}
 	return tmp;
 }
 
 EXPORT_API
-void *mmfile_memset_debug (void *s, int c, unsigned int n, const char *func, unsigned int line)
+void *mmfile_memset_debug(void *s, int c, unsigned int n, const char *func, unsigned int line)
 {
-	#ifdef __MMFILE_TEST_MODE__
+#ifdef __MMFILE_TEST_MODE__
 	debug_msg("## DEBUG ## memset (%p, %d, %d) by %s() %d\n", s, c, n, func, line);
-	#endif
-	return memset (s, c, n);
+#endif
+	return memset(s, c, n);
 }
 
 EXPORT_API
-void *mmfile_memcpy_debug (void *dest, const void *src, unsigned int n, const char *func, unsigned int line)
+void *mmfile_memcpy_debug(void *dest, const void *src, unsigned int n, const char *func, unsigned int line)
 {
-	#ifdef __MMFILE_TEST_MODE__
+#ifdef __MMFILE_TEST_MODE__
 	debug_msg("## DEBUG ## memcpy (%p, %p, %d) by %s() %d\n", dest, src, n, func, line);
-	#endif
-	return memcpy (dest, src, n);
+#endif
+	return memcpy(dest, src, n);
 }
 
 #else   /* __MMFILE_MEM_TRACE__ : ------------------------------------------------------------------*/
 
 EXPORT_API
-void *mmfile_malloc (unsigned int size)
+void *mmfile_malloc(unsigned int size)
 {
-    void *tmp = malloc (size);
-    if (tmp)
-    {
-        memset (tmp, 0x00, size);
-    }
-    return tmp;
+	void *tmp = malloc(size);
+	if (tmp) {
+		memset(tmp, 0x00, size);
+	}
+	return tmp;
 }
 
 EXPORT_API
-void *mmfile_calloc (unsigned int nmemb, unsigned int size)
+void *mmfile_calloc(unsigned int nmemb, unsigned int size)
 {
-    void *tmp = calloc (nmemb, size);
-    return tmp;
+	void *tmp = calloc(nmemb, size);
+	return tmp;
 }
 
 EXPORT_API
-void mmfile_free_r (void *ptr)
+void mmfile_free_r(void *ptr)
 {
-    if (ptr) free (ptr);
+	if (ptr) free(ptr);
 }
 
 EXPORT_API
-void *mmfile_realloc (void *ptr, unsigned int size)
+void *mmfile_realloc(void *ptr, unsigned int size)
 {
-    return realloc (ptr, size);
+	return realloc(ptr, size);
 }
 
 EXPORT_API
-void *mmfile_memset (void *s, int c, unsigned int n)
+void *mmfile_memset(void *s, int c, unsigned int n)
 {
-    return memset (s, c, n);
+	return memset(s, c, n);
 }
 
 EXPORT_API
-void *mmfile_memcpy (void *dest, const void *src, unsigned int n)
+void *mmfile_memcpy(void *dest, const void *src, unsigned int n)
 {
-    return memcpy (dest, src, n);
+	return memcpy(dest, src, n);
 }
 #endif
 

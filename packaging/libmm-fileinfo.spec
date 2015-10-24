@@ -1,6 +1,6 @@
 Name:	    libmm-fileinfo
 Summary:    Media Fileinfo
-Version:    0.6.36
+Version:    0.6.41
 Release:    1
 Group:      System/Libraries
 License:    Apache-2.0
@@ -9,7 +9,7 @@ Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 
 BuildRequires: pkgconfig(mm-common)
-BuildRequires: pkgconfig(mm-log)
+BuildRequires: pkgconfig(dlog)
 BuildRequires: pkgconfig(libswscale)
 BuildRequires: pkgconfig(glib-2.0)
 BuildRequires: pkgconfig(libavcodec)
@@ -34,11 +34,15 @@ Multimedia Framework FileInfo Library (developement files)
 %setup -q
 
 %build
+export CFLAGS+=" -Wextra -Wno-array-bounds"
+export CFLAGS+=" -Wno-ignored-qualifiers -Wno-unused-parameter -Wshadow"
+export CFLAGS+=" -Wwrite-strings -Wswitch-default -Werror"
+export CFLAGS+=" -Wno-int-to-pointer-cast -Wno-pointer-to-int-cast"
 ./autogen.sh
 
 CFLAGS="${CFLAGS} -D_MM_PROJECT_FLOATER -DEXPORT_API=\"__attribute__((visibility(\\\"default\\\")))\" " LDFLAGS="${LDFLAGS}" ./configure --disable-testmode --disable-dump --enable-dyn --disable-iommap --prefix=/usr --disable-gtk
 
-make %{?jobs:-j%jobs}
+make
 
 %install
 %make_install

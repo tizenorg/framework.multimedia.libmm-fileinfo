@@ -24,14 +24,13 @@
 
 #define MMFILE_PATH_MAX 256
 
-typedef enum
-{
+typedef enum {
 	MMFILE_FAIL = 0,
-	MMFILE_SUCCESS		
+	MMFILE_SUCCESS
 } MMFILE_RETURN;
 
-typedef int (*MMFunc) (void *data, void* user_data, bool file_test);
+typedef int (*MMFunc)(void *data, void *user_data, bool file_test);
 
-int mmfile_get_file_names (char *root_dir, MMFunc cbfunc, void* user_data);
+int mmfile_get_file_names(char *root_dir, MMFunc cbfunc, void *user_data);
 
 #endif /* _MM_FILE_TRAVERSE_H_ */

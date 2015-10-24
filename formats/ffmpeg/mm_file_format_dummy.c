@@ -24,7 +24,7 @@
 
 #include <mm_error.h>
 
-#include "mm_debug.h"
+#include "mm_file_debug.h"
 
 #include "mm_file_format_private.h"
 #include "mm_file_format_dummy.h"
@@ -34,58 +34,57 @@
 
 
 /* plugin manadatory API */
-int mmfile_format_read_stream_dummy (MMFileFormatContext *formatContext);
-int mmfile_format_read_frame_dummy  (MMFileFormatContext *formatContext, unsigned int timestamp, MMFileFormatFrame *frame);
-int mmfile_format_read_tag_dummy    (MMFileFormatContext *formatContext);
-int mmfile_format_close_dummy       (MMFileFormatContext *formatContext);
+int mmfile_format_read_stream_dummy(MMFileFormatContext *formatContext);
+int mmfile_format_read_frame_dummy(MMFileFormatContext *formatContext, unsigned int timestamp, MMFileFormatFrame *frame);
+int mmfile_format_read_tag_dummy(MMFileFormatContext *formatContext);
+int mmfile_format_close_dummy(MMFileFormatContext *formatContext);
 
 
 EXPORT_API
-int mmfile_format_open_dummy (MMFileFormatContext *formatContext)
+int mmfile_format_open_dummy(MMFileFormatContext *formatContext)
 {
-    debug_warning ("called mmfile_format_open_dummy\n");
+	debug_warning("called mmfile_format_open_dummy\n");
 
-    formatContext->ReadStream   = mmfile_format_read_stream_dummy;
-    formatContext->ReadFrame    = mmfile_format_read_frame_dummy;
-    formatContext->ReadTag      = mmfile_format_read_tag_dummy;
-    formatContext->Close        = mmfile_format_close_dummy;
-   
-    return MMFILE_FORMAT_SUCCESS;
+	formatContext->ReadStream   = mmfile_format_read_stream_dummy;
+	formatContext->ReadFrame    = mmfile_format_read_frame_dummy;
+	formatContext->ReadTag      = mmfile_format_read_tag_dummy;
+	formatContext->Close        = mmfile_format_close_dummy;
+
+	return MMFILE_FORMAT_SUCCESS;
 }
 
 EXPORT_API
-int mmfile_format_read_stream_dummy (MMFileFormatContext * formatContext)
+int mmfile_format_read_stream_dummy(MMFileFormatContext *formatContext)
 {
-    debug_warning ("called mmfile_format_read_stream_dummy\n");
-    return MMFILE_FORMAT_SUCCESS;
+	debug_warning("called mmfile_format_read_stream_dummy\n");
+	return MMFILE_FORMAT_SUCCESS;
 }
 
 EXPORT_API
-int mmfile_format_read_frame_dummy  (MMFileFormatContext *formatContext, unsigned int timestamp, MMFileFormatFrame *frame)
+int mmfile_format_read_frame_dummy(MMFileFormatContext *formatContext, unsigned int timestamp, MMFileFormatFrame *frame)
 {
-    debug_warning ("called mmfile_format_read_frame_dummy\n");
-    return MMFILE_FORMAT_SUCCESS;
+	debug_warning("called mmfile_format_read_frame_dummy\n");
+	return MMFILE_FORMAT_SUCCESS;
 }
 
 EXPORT_API
-int mmfile_format_read_tag_dummy    (MMFileFormatContext *formatContext)
+int mmfile_format_read_tag_dummy(MMFileFormatContext *formatContext)
 {
-    debug_warning ("called mmfile_format_read_tag_dummy\n");
-    return MMFILE_FORMAT_SUCCESS;    
+	debug_warning("called mmfile_format_read_tag_dummy\n");
+	return MMFILE_FORMAT_SUCCESS;
 }
 
 EXPORT_API
-int mmfile_format_close_dummy       (MMFileFormatContext *formatContext)
+int mmfile_format_close_dummy(MMFileFormatContext *formatContext)
 {
-    debug_warning ("called mmfile_format_close_dummy\n");
-    if (formatContext)
-    {
-        formatContext->ReadStream   = NULL;
-        formatContext->ReadFrame    = NULL;
-        formatContext->ReadTag      = NULL;
-        formatContext->Close        = NULL;
-    }
-    
-    return MMFILE_FORMAT_SUCCESS;    
+	debug_warning("called mmfile_format_close_dummy\n");
+	if (formatContext) {
+		formatContext->ReadStream   = NULL;
+		formatContext->ReadFrame    = NULL;
+		formatContext->ReadTag      = NULL;
+		formatContext->Close        = NULL;
+	}
+
+	return MMFILE_FORMAT_SUCCESS;
 }
 

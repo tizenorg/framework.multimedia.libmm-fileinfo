@@ -18,52 +18,49 @@
  * limitations under the License.
  *
  */
- 
-#include <stdlib.h> 
+
+#include <stdlib.h>
 #include <string.h>
 #include <glib.h>
 #include <unicode/ucsdet.h>
-#include "mm_debug.h"
+#include "mm_file_debug.h"
 #include "mm_file_utils.h"
 
 #ifdef __MMFILE_MEM_TRACE__
 EXPORT_API
-int  mmfile_util_wstrlen (unsigned short *wText)
+int  mmfile_util_wstrlen(unsigned short *wText)
 {
-    int n = 0;
+	int n = 0;
 
-    if (NULL == wText)
-    {
-        debug_error ("wText is NULL\n");
-        return MMFILE_UTIL_FAIL;
-    }
+	if (NULL == wText) {
+		debug_error("wText is NULL\n");
+		return MMFILE_UTIL_FAIL;
+	}
 
-    n = 0;
+	n = 0;
 
-    while ( *(wText+n) != 0 )
-    {
-        n++;
-    }
+	while (*(wText + n) != 0) {
+		n++;
+	}
 
-    return n; 
+	return n;
 }
 
-short __WmLngSwapShort( short aShort )
+short __WmLngSwapShort(short aShort)
 {
-	return ( ( aShort << 8 ) + ( aShort >> 8 ) );
+	return ((aShort << 8) + (aShort >> 8));
 }
 
 EXPORT_API
-short* mmfile_swap_2byte_string (short* mszOutput, short* mszInput, int length)
+short *mmfile_swap_2byte_string(short *mszOutput, short *mszInput, int length)
 {
 	int	i;
 
-	for ( i = 0; i < length; i++ )
-	{
-		if ( mszInput[i] == 0 )
+	for (i = 0; i < length; i++) {
+		if (mszInput[i] == 0)
 			break;
 
-		mszOutput[i] = __WmLngSwapShort( mszInput[i] );
+		mszOutput[i] = __WmLngSwapShort(mszInput[i]);
 	}
 
 	mszOutput[i] = 0;
@@ -73,108 +70,105 @@ short* mmfile_swap_2byte_string (short* mszOutput, short* mszInput, int length)
 
 
 EXPORT_API
-char *mmfile_string_convert_debug (const char *str, unsigned int len,
-                             const char *to_codeset, const char *from_codeset,
-                             int *bytes_read,
-                             int *bytes_written,
-                             const char *func,
-                             unsigned int line)
+char *mmfile_string_convert_debug(const char *str, unsigned int len,
+                                  const char *to_codeset, const char *from_codeset,
+                                  int *bytes_read,
+                                  int *bytes_written,
+                                  const char *func,
+                                  unsigned int line)
 {
-    char *tmp = g_convert (str, len, to_codeset, from_codeset, bytes_read, bytes_written, NULL);
+	char *tmp = g_convert(str, len, to_codeset, from_codeset, bytes_read, bytes_written, NULL);
 
-    if (tmp)
-    {
+	if (tmp) {
 #ifdef __MMFILE_TEST_MODE__
 		debug_msg("## DEBUG ## %p = g_convert (%p, %u, %p, %p, %p ,%p, %p, %u) by %s() %d\n",
-                          tmp, str, len, to_codeset, from_codeset, bytes_read, bytes_written, func, line);
+		          tmp, str, len, to_codeset, from_codeset, bytes_read, bytes_written, func, line);
 #endif
-    }
+	}
 
-    return tmp;
-    
+	return tmp;
+
 }
 
 EXPORT_API
-char **mmfile_strsplit (const char *string, const char *delimiter)
+char **mmfile_strsplit(const char *string, const char *delimiter)
 {
-    return g_strsplit (string, delimiter, -1);
+	return g_strsplit(string, delimiter, -1);
 }
 
 EXPORT_API
-void mmfile_strfreev (char **str_array)
+void mmfile_strfreev(char **str_array)
 {
-    g_strfreev(str_array);
+	g_strfreev(str_array);
 }
 
 EXPORT_API
-char *mmfile_strdup_debug (const char *str, const char *func, unsigned int line)
+char *mmfile_strdup_debug(const char *str, const char *func, unsigned int line)
 {
-    char *temp = NULL;
-    
-    if (!str)
-        return NULL;
-    
-    temp = strdup (str);
+	char *temp = NULL;
 
-    if (temp) {
+	if (!str)
+		return NULL;
+
+	temp = strdup(str);
+
+	if (temp) {
 #ifdef __MMFILE_TEST_MODE__
-        debug_msg("## DEBUG ## %p = strdup (%p) by %s() %d\n", temp, str, func, line);
+		debug_msg("## DEBUG ## %p = strdup (%p) by %s() %d\n", temp, str, func, line);
 #endif
-    }
+	}
 
-    return temp; 
+	return temp;
 }
 
 
 #else   /* __MMFILE_MEM_TRACE__ */
 
 EXPORT_API
-int  mmfile_util_wstrlen (unsigned short *wText)
+int  mmfile_util_wstrlen(unsigned short *wText)
 {
-    int n = 0;
+	int n = 0;
 
-    if (NULL == wText)
-    {
-        debug_error ("wText is NULL\n");
-        return MMFILE_UTIL_FAIL;
-    }
+	if (NULL == wText) {
+		debug_error("wText is NULL\n");
+		return MMFILE_UTIL_FAIL;
+	}
 
-    n = 0;
+	n = 0;
 
-    while ( *(wText+n) != 0 )
-    {
-        n++;
-    }
+	while (*(wText + n) != 0) {
+		n++;
+	}
 
-    return n; 
+	return n;
 }
 
 EXPORT_API
 char *mmfile_get_charset(const char *str)
 {
-	UCharsetDetector* ucsd = NULL;
-	const UCharsetMatch* ucm = NULL;
+	UCharsetDetector *ucsd = NULL;
+	const UCharsetMatch *ucm = NULL;
 	UErrorCode status = U_ZERO_ERROR;
 
-	const char* charset = NULL;
+	const char *charset = NULL;
 	char *ret_charset = NULL;
 
-	ucsd = ucsdet_open( &status );
-	if( U_FAILURE(status) ) {
+	ucsd = ucsdet_open(&status);
+	if (U_FAILURE(status)) {
 		debug_error("fail to ucsdet_open\n");
 		return NULL;
 	}
 
-	ucsdet_enableInputFilter( ucsd, TRUE );
+	ucsdet_enableInputFilter(ucsd, TRUE);
 
-	ucsdet_setText( ucsd, str, strlen(str), &status );
-	if( U_FAILURE(status) ) {
+	ucsdet_setText(ucsd, str, strlen(str), &status);
+	if (U_FAILURE(status)) {
 		debug_error("fail to ucsdet_setText\n");
 		goto done;
 	}
 
-	ucm = ucsdet_detect( ucsd, &status );
-	if( U_FAILURE(status) ) {
+	ucm = ucsdet_detect(ucsd, &status);
+	if (U_FAILURE(status)) {
 		debug_error("fail to ucsdet_detect\n");
 		goto done;
 	}
@@ -184,8 +178,8 @@ char *mmfile_get_charset(const char *str)
 		goto done;
 	}
 
-	charset = ucsdet_getName( ucm, &status );
-	if( U_FAILURE(status) ) {
+	charset = ucsdet_getName(ucm, &status);
+	if (U_FAILURE(status)) {
 		debug_error("fail to ucsdet_getName\n");
 		charset = NULL;
 		goto done;
@@ -196,41 +190,41 @@ done:
 	if (charset != NULL)
 		ret_charset = strdup(charset);
 
-	ucsdet_close( ucsd );
+	ucsdet_close(ucsd);
 
 	return ret_charset;
 }
 
 EXPORT_API
-char *mmfile_string_convert (const char *str, unsigned int len,
-                             const char *to_codeset, const char *from_codeset,
-                             unsigned int *bytes_read,
-                             unsigned int *bytes_written)
+char *mmfile_string_convert(const char *str, unsigned int len,
+                            const char *to_codeset, const char *from_codeset,
+                            gsize *bytes_read,
+                            unsigned int *bytes_written)
 {
 	char *result = NULL;
 	GError *err = NULL;
-	int i = 0;
-	unsigned int written_len = 0;
+	/*int i = 0;*/
+	gsize written_len = 0;
 
 	if (len != 0) {
-		result = g_convert (str, len, to_codeset, from_codeset, bytes_read, &written_len, &err);
+		result = g_convert(str, len, to_codeset, from_codeset, bytes_read, &written_len, &err);
 
 		/*if converting failed, return duplicated source string.*/
 		if (result == NULL) {
 #ifdef __MMFILE_TEST_MODE__
-			debug_warning ("text encoding failed.[%s][%d]\n", str, len);
-			if(err != NULL) {
-				debug_warning ("Error msg [%s]", err->message);
+			debug_warning("text encoding failed.[%s][%d]\n", str, len);
+			if (err != NULL) {
+				debug_warning("Error msg [%s]", err->message);
 				g_error_free(err);
 			}
 #endif
 			written_len = 0;
 		} else {
 			/* check carrige return */
-			int i = 0;
+			unsigned int i = 0;
 			for (i = 0; i < written_len; i++) {
-				if (result[i] == 13){
-					if (result[i+1] != 10)
+				if (result[i] == 13) {
+					if (result[i + 1] != 10)
 						result[i] = 10;
 				}
 			}
@@ -239,7 +233,7 @@ char *mmfile_string_convert (const char *str, unsigned int len,
 		written_len = 0;
 	}
 
-	if(bytes_written != NULL) {
+	if (bytes_written != NULL) {
 		*bytes_written = written_len;
 	}
 
@@ -247,24 +241,24 @@ char *mmfile_string_convert (const char *str, unsigned int len,
 }
 
 EXPORT_API
-char **mmfile_strsplit (const char *string, const char *delimiter)
+char **mmfile_strsplit(const char *string, const char *delimiter)
 {
-    return g_strsplit (string, delimiter, -1);
+	return g_strsplit(string, delimiter, -1);
 }
 
 EXPORT_API
-void mmfile_strfreev (char **str_array)
+void mmfile_strfreev(char **str_array)
 {
-    g_strfreev(str_array);
+	g_strfreev(str_array);
 }
 
 EXPORT_API
-char *mmfile_strdup (const char *str)
+char *mmfile_strdup(const char *str)
 {
-    if (!str)
-        return NULL;
-    
-    return strdup (str);
+	if (!str)
+		return NULL;
+
+	return strdup(str);
 }
 
 #endif  /*__MMFILE_MEM_TRACE__*/

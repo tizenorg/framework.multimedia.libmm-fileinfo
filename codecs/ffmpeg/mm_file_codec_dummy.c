@@ -24,7 +24,7 @@
 
 #include <mm_error.h>
 
-#include "mm_debug.h"
+#include "mm_file_debug.h"
 
 #include "mm_file_codec_private.h"
 #include "mm_file_codec_dummy.h"
@@ -34,36 +34,36 @@
 
 
 /* plugin manadatory API */
-int mmfile_codec_decode_dummy (MMFileCodecContext *codecContext, MMFileCodecFrame *output);
-int mmfile_codec_close_dummy  (MMFileCodecContext *codecContext);
+int mmfile_codec_decode_dummy(MMFileCodecContext *codecContext, MMFileCodecFrame *output);
+int mmfile_codec_close_dummy(MMFileCodecContext *codecContext);
 
 
 EXPORT_API
-int mmfile_codec_open_dummy (MMFileCodecContext *codecContext, MMFileCodecFrame *input)
+int mmfile_codec_open_dummy(MMFileCodecContext *codecContext, MMFileCodecFrame *input)
 {
-    debug_warning ("called mmfile_codec_open_dummy\n");
-   
-    codecContext->Decode = mmfile_codec_decode_dummy;
-    codecContext->Close  = mmfile_codec_close_dummy;
-   
-    return MMFILE_CODEC_SUCCESS;
+	debug_warning("called mmfile_codec_open_dummy\n");
+
+	codecContext->Decode = mmfile_codec_decode_dummy;
+	codecContext->Close  = mmfile_codec_close_dummy;
+
+	return MMFILE_CODEC_SUCCESS;
 }
 
 EXPORT_API
-int mmfile_codec_decode_dummy (MMFileCodecContext *codecContext, MMFileCodecFrame *output)
+int mmfile_codec_decode_dummy(MMFileCodecContext *codecContext, MMFileCodecFrame *output)
 {
-    debug_warning ("called mmfile_codec_decode_dummy\n");
-    return MMFILE_CODEC_SUCCESS;     
+	debug_warning("called mmfile_codec_decode_dummy\n");
+	return MMFILE_CODEC_SUCCESS;
 }
 
 EXPORT_API
-int mmfile_codec_close_dummy (MMFileCodecContext *codecContext)
+int mmfile_codec_close_dummy(MMFileCodecContext *codecContext)
 {
-    debug_warning ("called mmfile_codec_close_dummy\n");
+	debug_warning("called mmfile_codec_close_dummy\n");
 
-    codecContext->Decode   = NULL;
-    codecContext->Close    = NULL;
-    
-    return MMFILE_CODEC_SUCCESS;    
+	codecContext->Decode   = NULL;
+	codecContext->Close    = NULL;
+
+	return MMFILE_CODEC_SUCCESS;
 }
 

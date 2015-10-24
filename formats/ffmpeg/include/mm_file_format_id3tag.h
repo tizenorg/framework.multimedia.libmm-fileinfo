@@ -76,7 +76,7 @@ typedef enum {
 } AvID3v2PictureType;
 
 
-#define MP3TAGINFO_SIZE							128         // file end 128 byte 
+#define MP3TAGINFO_SIZE							128         /* file end 128 byte  */
 #define MP3_ID3_TITLE_LENGTH					30
 #define MP3_ID3_ARTIST_LENGTH					30
 #define MP3_ID3_ALBUM_LENGTH					30
@@ -103,7 +103,6 @@ typedef enum {
 	AV_ID3V2_UTF16_BE,
 	AV_ID3V2_UTF8,
 	AV_ID3V2_MAX
-	
 } AvID3v2EncodingType;
 
 
@@ -117,7 +116,6 @@ typedef struct{
 	int		imgDesLen;
 	int 	imgMimetypeLen;
 	bool	bURLInfo;
-	
 } AvTagVer2ImageInfo;
 
  typedef struct{
@@ -148,14 +146,13 @@ typedef struct{
 
 } AvTagVer2AdditionalData;
 
- 
-typedef struct
-{
+
+typedef struct {
 	int		titleLen;
 	int		artistLen;
 	int		authorLen;
 	int		copyrightLen;
-	//int		descriptionLen;	/*ID3tag official tag name is "COMM" and meaning "Comment"*/
+	/*int		descriptionLen;*/	/*ID3tag official tag name is "COMM" and meaning "Comment"*/
 	int		commentLen;
 	int		ratingLen;
 	int		albumLen;
@@ -163,72 +160,69 @@ typedef struct
 	int		genreLen;
 	int		tracknumLen;
 	int		recdateLen;
-	
-// for PC Studio Podcast
+
+/* for PC Studio Podcast */
 	int 	contentGroupLen;
-	
-// for ID3V2 Tag
+
+/* for ID3V2 Tag */
 	int		encbyLen;
 	int		urlLen;
 	int		originartistLen;
 	int		composerLen;
 
-// To send resolution info to appl from OEM
-	int 	width;                
+/* To send resolution info to appl from OEM */
+	int 	width;
 	int 	height;
-	
+
 	unsigned int	bitRate;
 	unsigned int	sampleRate;
 	unsigned int	channels;
-//	unsigned long	creationTime;       
+/*	unsigned long	creationTime; */
 	unsigned long	duration;
 
-// for mp3 Info
-	char			*pToc;			// VBR�϶� SeekPosition�� ���ϱ� ���� TOC ���̺��� ������ ��� �ִ� char �迭 , 100 ����Ʈ ����
-	unsigned int	mpegVersion;	// 1 : mpeg 1,    2 : mpeg 2, 3 : mpeg2.5
-	unsigned int	layer;			// 1 : layer1, 2 : layer2, 3 : layer3
-	unsigned int	channelIndex;	// 0 : stereo, 1 : joint_stereo, 2 : dual_channel, 3 : mono
+/* for mp3 Info */
+	char			*pToc;			/* VBR�϶� SeekPosition�� ���ϱ� ���� TOC ���̺��� ������ ��� �ִ� char �迭, 100 ����Ʈ ���� */
+	unsigned int	mpegVersion;	/* 1 : mpeg 1,    2 : mpeg 2, 3 : mpeg2.5 */
+	unsigned int	layer;			/* 1 : layer1, 2 : layer2, 3 : layer3 */
+	unsigned int	channelIndex;	/* 0 : stereo, 1 : joint_stereo, 2 : dual_channel, 3 : mono */
 	unsigned int	objectType;
 	unsigned int	headerType;
-	long			fileLen;		// mp3 ������ ��ü ����
-	long			headerPos;		// mp3 ����� ó������ ��Ÿ���� ��ġ
-	long			datafileLen;	// ID3Tag���� �����ϰ� ���� mp3 frame���� ���� ,  VBR�϶� XHEADDATA �� bytes �� �ش��Ѵ�
-	int				frameSize;		// mp3 frame �� ���� ũ��
-	int				frameNum;		// mp3 ���Ͽ� �������� � ����ִ°�?
-	bool			bVbr;			// VBR mp3?
-	bool			bPadding;		// Padding?
+	long			fileLen;		/* mp3 ������ ��ü ���� */
+	long			headerPos;		/* mp3 ����� ó������ ��Ÿ���� ��ġ */
+	long			datafileLen;	/* ID3Tag���� �����ϰ� ���� mp3 frame���� ����,  VBR�϶� XHEADDATA �� bytes �� �ش��Ѵ� */
+	int				frameSize;		/* mp3 frame �� ���� ũ�� */
+	int				frameNum;		/* mp3 ���Ͽ� �������� � ����ִ°�? */
+	bool			bVbr;			/* VBR mp3? */
+	bool			bPadding;		/* Padding? */
 	bool			bV1tagFound;
 
-	char			*pTitle;		//Title/songname/
-	char			*pArtist;		//Lead performer(s)/Soloist(s), 
-	char			*pAuthor;		//Author
+	char			*pTitle;		/*Title/songname/ */
+	char			*pArtist;		/*Lead performer(s)/Soloist(s), */
+	char			*pAuthor;		/*Author */
 	char			*pCopyright;
-	//char			*pDescription;	/*ID3tag official tag name is "COMM" and meaning "Comment"*/
+	/*char			*pDescription;*/	/*ID3tag official tag name is "COMM" and meaning "Comment"*/
 	char			*pComment;
 	char			*pRating;
-	char			*pAlbum;		//Album/Movie/
+	char			*pAlbum;		/*Album/Movie/ */
 	char			*pAlbum_Artist;
 	char			*pYear;
-	char			*pGenre; 
-	char			*pTrackNum;		//Track number/Position in set
-	char			*pRecDate; 		//Recording dates
-	
-// for PC Studio Podcast
+	char			*pGenre;
+	char			*pTrackNum;		/*Track number/Position in set */
+	char			*pRecDate; 		/*Recording dates */
+
+/* for PC Studio Podcast */
 	char			*pContentGroup;
 
-// for ID3V2 Tag
-	char			*pEncBy;				//Encoded by
-	char			*pURL;					//User defined URL link frame for ID3V2 Tag
-	char			*pOriginArtist;			//Original artist(s)/performer(s)
-	char			*pComposer;				//Composer
-	AvTagVer2ImageInfo			imageInfo;	//Album art   attached feature
-	AvTagVer2AdditionalData		tagV2Info; //Needed data for ID3 tag parsing
+/* for ID3V2 Tag */
+	char			*pEncBy;				/*Encoded by */
+	char			*pURL;					/*User defined URL link frame for ID3V2 Tag */
+	char			*pOriginArtist;			/*Original artist(s)/performer(s) */
+	char			*pComposer;				/*Composer */
+	AvTagVer2ImageInfo			imageInfo;	/*Album art   attached feature */
+	AvTagVer2AdditionalData		tagV2Info; /*Needed data for ID3 tag parsing */
 
-// for DRM 2.0
-	char			*pTransactionID;
-
-//for ID3V1 Tag
-	unsigned char	genre; 
+/*for ID3V1 Tag */
+	unsigned char	genre;
 
 } AvFileContentInfo;
 
@@ -239,43 +233,38 @@ typedef struct {
 	int 	height;
 } AvExtraInfo;
 
-inline static void mm_file_free_AvFileContentInfo (AvFileContentInfo *pInfo)
+inline static void mm_file_free_AvFileContentInfo(AvFileContentInfo *pInfo)
 {
 	if (pInfo) {
-		if (pInfo->pToc) mmfile_free (pInfo->pToc);
-		if (pInfo->pTitle) mmfile_free (pInfo->pTitle);
-		if (pInfo->pArtist) mmfile_free (pInfo->pArtist);
-		if (pInfo->pAuthor) mmfile_free (pInfo->pAuthor);
-		if (pInfo->pCopyright) mmfile_free (pInfo->pCopyright);
-		//if (pInfo->pDescription) mmfile_free (pInfo->pDescription);
-		if (pInfo->pComment) mmfile_free (pInfo->pComment);
-		if (pInfo->pRating) mmfile_free (pInfo->pRating);
-		if (pInfo->pAlbum) mmfile_free (pInfo->pAlbum);
-		if (pInfo->pAlbum_Artist) mmfile_free (pInfo->pAlbum_Artist);
-		if (pInfo->pYear) mmfile_free (pInfo->pYear);
-		if (pInfo->pGenre) mmfile_free (pInfo->pGenre); 
-		if (pInfo->pTrackNum) mmfile_free (pInfo->pTrackNum);
-		if (pInfo->pRecDate) mmfile_free (pInfo->pRecDate);
-
-		if (pInfo->pContentGroup) mmfile_free (pInfo->pContentGroup);
-
-		if (pInfo->pEncBy) mmfile_free (pInfo->pEncBy);
-		if (pInfo->pURL) mmfile_free (pInfo->pURL);
-		if (pInfo->pOriginArtist) mmfile_free (pInfo->pOriginArtist);
-		if (pInfo->pComposer) mmfile_free (pInfo->pComposer);
-
-		if (pInfo->imageInfo.pImageBuf) mmfile_free (pInfo->imageInfo.pImageBuf);
-
-		if (pInfo->pTransactionID) mmfile_free (pInfo->pTransactionID);
+		if (pInfo->pToc) mmfile_free(pInfo->pToc);
+		if (pInfo->pTitle) mmfile_free(pInfo->pTitle);
+		if (pInfo->pArtist) mmfile_free(pInfo->pArtist);
+		if (pInfo->pAuthor) mmfile_free(pInfo->pAuthor);
+		if (pInfo->pCopyright) mmfile_free(pInfo->pCopyright);
+		/*if (pInfo->pDescription) mmfile_free(pInfo->pDescription); */
+		if (pInfo->pComment) mmfile_free(pInfo->pComment);
+		if (pInfo->pRating) mmfile_free(pInfo->pRating);
+		if (pInfo->pAlbum) mmfile_free(pInfo->pAlbum);
+		if (pInfo->pAlbum_Artist) mmfile_free(pInfo->pAlbum_Artist);
+		if (pInfo->pYear) mmfile_free(pInfo->pYear);
+		if (pInfo->pGenre) mmfile_free(pInfo->pGenre);
+		if (pInfo->pTrackNum) mmfile_free(pInfo->pTrackNum);
+		if (pInfo->pRecDate) mmfile_free(pInfo->pRecDate);
+		if (pInfo->pContentGroup) mmfile_free(pInfo->pContentGroup);
+		if (pInfo->pEncBy) mmfile_free(pInfo->pEncBy);
+		if (pInfo->pURL) mmfile_free(pInfo->pURL);
+		if (pInfo->pOriginArtist) mmfile_free(pInfo->pOriginArtist);
+		if (pInfo->pComposer) mmfile_free(pInfo->pComposer);
+		if (pInfo->imageInfo.pImageBuf) mmfile_free(pInfo->imageInfo.pImageBuf);
 	}
 }
 
 
-bool mm_file_id3tag_parse_v110 (AvFileContentInfo* pInfo, unsigned char *buffer); //20050401 Condol : for MP3 content Info.
-bool	mm_file_id3tag_parse_v222 (AvFileContentInfo* pInfo, unsigned char *buffer);
-bool	mm_file_id3tag_parse_v223 (AvFileContentInfo* pInfo, unsigned char *buffer);
-bool	mm_file_id3tag_parse_v224 (AvFileContentInfo* pInfo, unsigned char *buffer);
-void mm_file_id3tag_restore_content_info (AvFileContentInfo* pInfo);
+bool mm_file_id3tag_parse_v110(AvFileContentInfo* pInfo, unsigned char *buffer); //20050401 Condol : for MP3 content Info.
+bool mm_file_id3tag_parse_v222(AvFileContentInfo* pInfo, unsigned char *buffer);
+bool mm_file_id3tag_parse_v223(AvFileContentInfo* pInfo, unsigned char *buffer);
+bool mm_file_id3tag_parse_v224(AvFileContentInfo* pInfo, unsigned char *buffer);
+void mm_file_id3tag_restore_content_info(AvFileContentInfo* pInfo);
 
 #ifdef __cplusplus
 }

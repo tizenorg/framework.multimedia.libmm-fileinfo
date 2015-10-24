@@ -59,8 +59,9 @@ libmmfile_formats_la_LIBADD = $(MMCOMMON_LIBS) \
 				$(SWSCALE_LIBS) \
       			  $(top_builddir)/utils/libmmfile_utils.la 
 
-libmmfile_formats_la_CFLAGS += $(MMLOG_CFLAGS) -DMMF_LOG_OWNER=0x040 -DMMF_DEBUG_PREFIX=\"MMF-FILE-FORMAT-FFMPEG\"
-libmmfile_formats_la_LIBADD += $(MMLOG_LIBS)
+libmmfile_formats_la_CFLAGS += $(DLOG_CFLAGS)
+libmmfile_formats_la_LIBADD += $(DLOG_LIBS)
 
 libmmfile_formats_la_CFLAGS += -D__MMFILE_FFMPEG_V100__
 libmmfile_formats_la_CFLAGS += -D__MMFILE_FFMPEG_V085__
+libmmfile_formats_la_CFLAGS += -D__MMFILE_LIBAV_VERSION__=11.3

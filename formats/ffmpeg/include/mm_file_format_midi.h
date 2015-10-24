@@ -38,8 +38,8 @@ typedef struct {
 	char *comment;
 } MIDI_INFO_SIMPLE;
 
-MIDI_INFO_SIMPLE*	mmfile_format_get_midi_infomation (char* uri);
-void				mmfile_format_free_midi_infomation (MIDI_INFO_SIMPLE *info);
+MIDI_INFO_SIMPLE *mmfile_format_get_midi_infomation(char *uri);
+void mmfile_format_free_midi_infomation(MIDI_INFO_SIMPLE *info);
 
 #ifdef __cplusplus
 }

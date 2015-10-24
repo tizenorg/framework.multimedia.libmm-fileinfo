@@ -32,193 +32,169 @@
 
 
 
-int get_address (char *linebuff, char *ptrbuff)
+int get_address(char *linebuff, char *ptrbuff)
 {
-    char *head = linebuff;
+	char *head = linebuff;
 
-    if (!linebuff || !ptrbuff)
-        return 0;
+	if (!linebuff || !ptrbuff)
+		return 0;
 
-    head = head + PREFIX_STRING_LEN;
+	head = head + PREFIX_STRING_LEN;
 
-    while (*head != ' ')
-    {
-        *ptrbuff = *head;
-        ptrbuff++;
-        head++;
-    }
+	while (*head != ' ') {
+		*ptrbuff = *head;
+		ptrbuff++;
+		head++;
+	}
 
-    return 1;
+	return 1;
 }
 
-int main (int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-    char linebuffer[LINE_BUFFER_LEN];
-    char ptrbuffer[ADDR_BUFFER_LEN];
+	char linebuffer[LINE_BUFFER_LEN];
+	char ptrbuffer[ADDR_BUFFER_LEN];
 
-    int  alloccount = 0;
-    int  freecount = 0;
+	int  alloccount = 0;
+	int  freecount = 0;
 
-    if (argc != 2)
-    {
-        printf ("Usage: ./memtrace-read memtrace.mtr\n");
-        exit (1);
-    }
+	if (argc != 2) {
+		printf("Usage: ./memtrace-read memtrace.mtr\n");
+		exit(1);
+	}
 
-    FILE *fp1 = fopen (argv[1], "r");
-    FILE *fp2 = fopen ("memtrace-result.txt", "w");
-    
-    if (!fp1 || !fp2)
-    {
-        printf ("fail to open %s\n", argv[1]);
-        exit (1);
-    }
+	FILE *fp1 = fopen(argv[1], "r");
+	FILE *fp2 = fopen("memtrace-result.txt", "w");
 
-    while (1)
-    {
-        memset (linebuffer, 0x00, LINE_BUFFER_LEN);
-        memset (ptrbuffer, 0x00, ADDR_BUFFER_LEN);
+	if (!fp1 || !fp2) {
+		printf("fail to open %s\n", argv[1]);
+		exit(1);
+	}
 
-        if (fgets (linebuffer, LINE_BUFFER_LEN, fp1) == NULL)
-            break;
+	while (1) {
+		memset(linebuffer, 0x00, LINE_BUFFER_LEN);
+		memset(ptrbuffer, 0x00, ADDR_BUFFER_LEN);
 
-        if (memcmp (MALLOC_STRING, linebuffer, PREFIX_STRING_LEN) == 0)
-        {
-            get_address (linebuffer, ptrbuffer);
-            alloccount++;
-        }
+		if (fgets(linebuffer, LINE_BUFFER_LEN, fp1) == NULL)
+			break;
 
-        if (memcmp (FREE_STRING, linebuffer, PREFIX_STRING_LEN) == 0)
-        {
-            get_address (linebuffer, ptrbuffer);
-            freecount++;
-        }
-    }
+		if (memcmp(MALLOC_STRING, linebuffer, PREFIX_STRING_LEN) == 0) {
+			get_address(linebuffer, ptrbuffer);
+			alloccount++;
+		}
 
-    if (alloccount != freecount)
-    {
-        char alloclist[alloccount][ADDR_BUFFER_LEN];
-        int  alloccountlist[alloccount];
-        char freelist[freecount][ADDR_BUFFER_LEN];
-        int  freecountlist[freecount];
+		if (memcmp(FREE_STRING, linebuffer, PREFIX_STRING_LEN) == 0) {
+			get_address(linebuffer, ptrbuffer);
+			freecount++;
+		}
+	}
 
-        int  i = 0;
-        int  allocindex = 0;
-        int  freeindex = 0;
-        int  totalcount = 0;
+	if (alloccount != freecount) {
+		char alloclist[alloccount][ADDR_BUFFER_LEN];
+		int  alloccountlist[alloccount];
+		char freelist[freecount][ADDR_BUFFER_LEN];
+		int  freecountlist[freecount];
 
-        memset (alloclist, 0x00, alloccount*ADDR_BUFFER_LEN);
-        memset (alloccountlist, 0x00, alloccount*4);
+		int  i = 0;
+		int  allocindex = 0;
+		int  freeindex = 0;
+		int  totalcount = 0;
 
-        memset (freelist, 0x00, freecount*ADDR_BUFFER_LEN);
-        memset (freecountlist, 0x00, freecount*4);
+		memset(alloclist, 0x00, alloccount * ADDR_BUFFER_LEN);
+		memset(alloccountlist, 0x00, alloccount * 4);
 
-        fseek (fp1, 0, SEEK_SET);
+		memset(freelist, 0x00, freecount * ADDR_BUFFER_LEN);
+		memset(freecountlist, 0x00, freecount * 4);
 
-        while (1)
-        {
-            memset (linebuffer, 0x00, LINE_BUFFER_LEN);
-            memset (ptrbuffer, 0x00, ADDR_BUFFER_LEN);
+		fseek(fp1, 0, SEEK_SET);
 
-            if (fgets (linebuffer, LINE_BUFFER_LEN, fp1) == NULL)
-                break;
+		while (1) {
+			memset(linebuffer, 0x00, LINE_BUFFER_LEN);
+			memset(ptrbuffer, 0x00, ADDR_BUFFER_LEN);
 
-            totalcount++;
-            if (memcmp (MALLOC_STRING, linebuffer, PREFIX_STRING_LEN) == 0)
-            {
-                int i = 0;
+			if (fgets(linebuffer, LINE_BUFFER_LEN, fp1) == NULL)
+				break;
 
-                get_address (linebuffer, ptrbuffer);
+			totalcount++;
+			if (memcmp(MALLOC_STRING, linebuffer, PREFIX_STRING_LEN) == 0) {
+				int i = 0;
 
-                for (i = 0; i < alloccount; i++)
-                {
-                    if (memcmp (ptrbuffer, alloclist[i], strlen(ptrbuffer)) == 0)
-                    {
-                        alloccountlist[i]++;
-                        break;
-                    }
-                }
+				get_address(linebuffer, ptrbuffer);
 
-                if ( i == alloccount)
-                {
-                    memcpy (alloclist[allocindex], ptrbuffer, strlen(ptrbuffer));
-                    alloccountlist[allocindex]++;
-                    allocindex++;
-                }
-            }
+				for (i = 0; i < alloccount; i++) {
+					if (memcmp(ptrbuffer, alloclist[i], strlen(ptrbuffer)) == 0) {
+						alloccountlist[i]++;
+						break;
+					}
+				}
 
-            if (memcmp (FREE_STRING, linebuffer, PREFIX_STRING_LEN) == 0)
-            {
-                int i = 0;
+				if (i == alloccount) {
+					memcpy(alloclist[allocindex], ptrbuffer, strlen(ptrbuffer));
+					alloccountlist[allocindex]++;
+					allocindex++;
+				}
+			}
 
-                get_address (linebuffer, ptrbuffer);
+			if (memcmp(FREE_STRING, linebuffer, PREFIX_STRING_LEN) == 0) {
+				int i = 0;
 
-                for (i = 0; i < freecount; i++)
-                {
-                    if (memcmp (ptrbuffer, freelist[i], strlen(ptrbuffer)) == 0)
-                    {
-                        freecountlist[i]++;
-                        break;
-                    }
-                }
+				get_address(linebuffer, ptrbuffer);
 
-                if ( i == freecount)
-                {
-                    memcpy (freelist[freeindex], ptrbuffer, strlen(ptrbuffer));
-                    freecountlist[freeindex]++;
-                    freeindex++;
-                }
-            }
-        }
+				for (i = 0; i < freecount; i++) {
+					if (memcmp(ptrbuffer, freelist[i], strlen(ptrbuffer)) == 0) {
+						freecountlist[i]++;
+						break;
+					}
+				}
 
-        printf ("Total: %d mem operation\n", totalcount);
+				if (i == freecount) {
+					memcpy(freelist[freeindex], ptrbuffer, strlen(ptrbuffer));
+					freecountlist[freeindex]++;
+					freeindex++;
+				}
+			}
+		}
 
-        int i1 = 0, i2 = 0;
-        
+		printf("Total: %d mem operation\n", totalcount);
 
-        fprintf (fp2, "-------------------------------------------------------------\n");
-        fprintf (fp2, "ADDRESS (malloc count, free cout, diff)\n");
-        
-        
-        for ( i1 = 0; i1 < allocindex; i1++)
-        {
-            for (i2 = 0; i2 < freeindex; i2++)
-            {
-                if (strcmp (alloclist[i1], freelist[i2]) == 0)
-                {
-                    if (strcmp (alloclist[i1], "Checked") != 0)
-                        break;
-                }
-            }
+		int i1 = 0, i2 = 0;
 
-            if (i2 == freeindex)
-            {
-            //    fprintf (fp2, "%s error\n", alloclist[i1]);
-            }
-            else
-            {
-                fprintf (fp2, "%s %12d %8d %8d\n", alloclist[i1], alloccountlist[i1], freecountlist[i2], alloccountlist[i1] - freecountlist[i2]);
-                strcpy (alloclist[i1], "Checked");
-                strcpy (freelist[i2], "Checked");
-            }
-        }
 
-        for (i = 0; i < allocindex; i++)
-        {
-            if ( strcmp (alloclist[i], "Checked") != 0 )
-                fprintf (fp2, "%s error\n", alloclist[i]);
-        }
+		fprintf(fp2, "-------------------------------------------------------------\n");
+		fprintf(fp2, "ADDRESS (malloc count, free cout, diff)\n");
 
-        for (i = 0; i < freeindex; i++)
-        {
-            if ( strcmp (freelist[i], "Checked") != 0 )
-                fprintf (fp2, "%s error\n", freelist[i]);
-        }
-    }
 
-    fclose (fp1);
-    fclose (fp2);
+		for (i1 = 0; i1 < allocindex; i1++) {
+			for (i2 = 0; i2 < freeindex; i2++) {
+				if (strcmp(alloclist[i1], freelist[i2]) == 0) {
+					if (strcmp(alloclist[i1], "Checked") != 0)
+						break;
+				}
+			}
 
-    exit (0);
+			if (i2 == freeindex) {
+				/*    fprintf (fp2, "%s error\n", alloclist[i1]); */
+			} else {
+				fprintf(fp2, "%s %12d %8d %8d\n", alloclist[i1], alloccountlist[i1], freecountlist[i2], alloccountlist[i1] - freecountlist[i2]);
+				strcpy(alloclist[i1], "Checked");
+				strcpy(freelist[i2], "Checked");
+			}
+		}
+
+		for (i = 0; i < allocindex; i++) {
+			if (strcmp(alloclist[i], "Checked") != 0)
+				fprintf(fp2, "%s error\n", alloclist[i]);
+		}
+
+		for (i = 0; i < freeindex; i++) {
+			if (strcmp(freelist[i], "Checked") != 0)
+				fprintf(fp2, "%s error\n", freelist[i]);
+		}
+	}
+
+	fclose(fp1);
+	fclose(fp2);
+
+	exit(0);
 }
 

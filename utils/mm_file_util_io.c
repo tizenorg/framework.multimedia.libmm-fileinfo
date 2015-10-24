@@ -23,63 +23,63 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include "mm_debug.h"
+#include "mm_file_debug.h"
 #include "mm_file_utils.h"
 
 static unsigned char is_little_endian = 0;
 
-inline static int _is_little_endian (void)
+inline static int _is_little_endian(void)
 {
 	int i = 0x00000001;
 	return ((char *)&i)[0];
 }
 
 EXPORT_API
-inline unsigned int mmfile_io_be_uint32 (unsigned int value)
+inline unsigned int mmfile_io_be_uint32(unsigned int value)
 {
-	return (is_little_endian == 0) ? value : ((unsigned int)((((value)&0xFF000000)>>24) | (((value)&0x00FF0000)>>8) | (((value)&0x0000FF00)<<8) | (((value)&0x000000FF)<<24)));
+	return (is_little_endian == 0) ? value : ((unsigned int)((((value) & 0xFF000000) >> 24) | (((value) & 0x00FF0000) >> 8) | (((value) & 0x0000FF00) << 8) | (((value) & 0x000000FF) << 24)));
 }
 
 EXPORT_API
-inline unsigned int mmfile_io_le_uint32 (unsigned int value)
+inline unsigned int mmfile_io_le_uint32(unsigned int value)
 {
-	return (is_little_endian == 1) ? value : ((unsigned int)((((value)&0xFF000000)>>24) | (((value)&0x00FF0000)>>8) | (((value)&0x0000FF00)<<8) | (((value)&0x000000FF)<<24)));
+	return (is_little_endian == 1) ? value : ((unsigned int)((((value) & 0xFF000000) >> 24) | (((value) & 0x00FF0000) >> 8) | (((value) & 0x0000FF00) << 8) | (((value) & 0x000000FF) << 24)));
 }
 
 EXPORT_API
-inline int mmfile_io_be_int32 (unsigned int value)
+inline int mmfile_io_be_int32(unsigned int value)
 {
-	return (is_little_endian == 0) ? value : ((int)((((value)&0xFF000000)>>24) | (((value)&0x00FF0000)>>8) | (((value)&0x0000FF00)<<8) | (((value)&0x000000FF)<<24)));
+	return (is_little_endian == 0) ? value : ((unsigned int)((((value) & 0xFF000000) >> 24) | (((value) & 0x00FF0000) >> 8) | (((value) & 0x0000FF00) << 8) | (((value) & 0x000000FF) << 24)));
 }
 
 EXPORT_API
-inline int mmfile_io_le_int32 (unsigned int value)
+inline int mmfile_io_le_int32(unsigned int value)
 {
-	return (is_little_endian == 1) ? value : ((int)((((value)&0xFF000000)>>24) | (((value)&0x00FF0000)>>8) | (((value)&0x0000FF00)<<8) | (((value)&0x000000FF)<<24)));
+	return (is_little_endian == 1) ? value : ((unsigned int)((((value) & 0xFF000000) >> 24) | (((value) & 0x00FF0000) >> 8) | (((value) & 0x0000FF00) << 8) | (((value) & 0x000000FF) << 24)));
 }
 
 EXPORT_API
-inline unsigned short mmfile_io_be_uint16 (unsigned short value)
+inline unsigned short mmfile_io_be_uint16(unsigned short value)
 {
-	return (is_little_endian == 0) ? value : ((unsigned short)((((value)&0xFF00)>>8) | (((value)&0x00FF)<<8)));
+	return (is_little_endian == 0) ? value : ((unsigned short)((((value) & 0xFF00) >> 8) | (((value) & 0x00FF) << 8)));
 }
 
 EXPORT_API
-inline unsigned short mmfile_io_le_uint16 (unsigned short value)
+inline unsigned short mmfile_io_le_uint16(unsigned short value)
 {
-	return (is_little_endian == 1) ? value : ((unsigned short)((((value)&0xFF00)>>8) | (((value)&0x00FF)<<8)));
+	return (is_little_endian == 1) ? value : ((unsigned short)((((value) & 0xFF00) >> 8) | (((value) & 0x00FF) << 8)));
 }
 
 EXPORT_API
-inline short mmfile_io_be_int16 (unsigned short value)
+inline short mmfile_io_be_int16(unsigned short value)
 {
-	return (is_little_endian == 0) ? value : ((short)((((value)&0xFF00)>>8) | (((value)&0x00FF)<<8)));
+	return (is_little_endian == 0) ? value : ((short)((((value) & 0xFF00) >> 8) | (((value) & 0x00FF) << 8)));
 }
 
 EXPORT_API
-inline short mmfile_io_le_int16 (unsigned short value)
+inline short mmfile_io_le_int16(unsigned short value)
 {
-	return (is_little_endian == 1) ? value : ((short)((((value)&0xFF00)>>8) | (((value)&0x00FF)<<8)));
+	return (is_little_endian == 1) ? value : ((short)((((value) & 0xFF00) >> 8) | (((value) & 0x00FF) << 8)));
 }
 
 
@@ -94,14 +94,14 @@ static int _mmfile_open(MMFileIOHandle **handle, struct MMFileIOFunc *Func, cons
 	int fileNameLen = 0;
 
 	if (!handle || !Func || !filename || !Func->mmfile_open) {
-		debug_error ("invalid param\n");
+		debug_error("invalid param\n");
 		err = MMFILE_IO_FAILED;
 		goto fail;
 	}
 
-	pHandle = mmfile_malloc (sizeof(MMFileIOHandle));
+	pHandle = mmfile_malloc(sizeof(MMFileIOHandle));
 	if (!pHandle) {
-		debug_error ("mmfile_malloc: pHandle\n");
+		debug_error("mmfile_malloc: pHandle\n");
 		err = MMFILE_IO_FAILED;
 		goto fail;
 	}
@@ -112,34 +112,33 @@ static int _mmfile_open(MMFileIOHandle **handle, struct MMFileIOFunc *Func, cons
 	pHandle->flags = flags;
 	pHandle->privateData = NULL;
 	fileNameLen = strlen(filename);
-	#ifdef __MMFILE_TEST_MODE__
-	debug_msg ("[%d, %s]\n", fileNameLen, filename);
-	#endif
-	pHandle->fileName = mmfile_malloc (fileNameLen + 1);
+#ifdef __MMFILE_TEST_MODE__
+	debug_msg("[%d, %s]\n", fileNameLen, filename);
+#endif
+	pHandle->fileName = mmfile_malloc(fileNameLen + 1);
 	if (!pHandle->fileName) {
-		debug_error ("mmfile_malloc: pHandle->fileName\n");
+		debug_error("mmfile_malloc: pHandle->fileName\n");
 		err = MMFILE_IO_FAILED;
 		goto fail;
 	}
 
 	memcpy(pHandle->fileName, filename, fileNameLen);
 
-	err = Func->mmfile_open (pHandle, filename, flags);
+	err = Func->mmfile_open(pHandle, filename, flags);
 	if (err < 0) {
-		debug_error ("mmfile_open: pHandle->fileName\n");
+		debug_error("mmfile_open: pHandle->fileName\n");
 		err = MMFILE_IO_FAILED;
 		goto fail;
 	}
-  
+
 	return MMFILE_IO_SUCCESS;
 
 fail:
-	if (handle && *handle) // fix for prevent
-	{	
+	if (handle && *handle) { /* fix for prevent */
 		mmfile_close(*handle);
 		*handle = NULL;
 	}
-	
+
 	return err;
 }
 
@@ -148,15 +147,15 @@ int mmfile_open(MMFileIOHandle **handle, const char *filename, int flags)
 {
 	MMFileIOFunc   *pFuc = NULL;
 	const char  *pFile = NULL;
-	char        handle_str[256] = {0,};
+	char        handle_str[256] = {0, };
 	char        *pHandleName = NULL;
 
 	if (!handle || !filename) {
-		debug_error ("invalid param\n");
+		debug_error("invalid param\n");
 		return MMFILE_IO_FAILED;
 	}
 
-	memset (handle_str, 0x00, sizeof(handle_str));
+	memset(handle_str, 0x00, sizeof(handle_str));
 
 	pFile = filename;
 	pHandleName = handle_str;
@@ -167,7 +166,7 @@ int mmfile_open(MMFileIOHandle **handle, const char *filename, int flags)
 			goto file_handle;
 		}
 
-		if ((pHandleName - handle_str) < sizeof(handle_str) - 1) {
+		if ((pHandleName - handle_str) < (int)sizeof(handle_str) - 1) {
 			*pHandleName++ = *pFile;
 		}
 		pFile++;
@@ -184,7 +183,7 @@ file_handle:
 
 	while (pFuc != NULL) {
 		if (!strcmp(handle_str, pFuc->handleName)) {
-			return _mmfile_open (handle, pFuc, filename, flags);
+			return _mmfile_open(handle, pFuc, filename, flags);
 		}
 		pFuc = pFuc->next;
 	}
@@ -206,7 +205,7 @@ int mmfile_read(MMFileIOHandle *handle, unsigned char *buf, int size)
 		return MMFILE_IO_FAILED;
 	}
 
-	ret = handle->iofunc->mmfile_read (handle, buf, size);
+	ret = handle->iofunc->mmfile_read(handle, buf, size);
 	return ret;
 }
 
@@ -222,12 +221,12 @@ int mmfile_write(MMFileIOHandle *handle, unsigned char *buf, int size)
 		return MMFILE_IO_FAILED;
 	}
 
-	ret = handle->iofunc->mmfile_write (handle, buf, size);
+	ret = handle->iofunc->mmfile_write(handle, buf, size);
 	return ret;
 }
 
 EXPORT_API
-long long mmfile_seek(MMFileIOHandle *handle, long long pos, int whence)
+int64_t mmfile_seek(MMFileIOHandle *handle, int64_t pos, int whence)
 {
 	long long ret = 0;
 	if (!handle || !handle->iofunc || !handle->iofunc->mmfile_seek) {
@@ -271,7 +270,7 @@ int mmfile_close(MMFileIOHandle *handle)
 }
 
 EXPORT_API
-int mmfile_register_io_func (MMFileIOFunc *iofunc)
+int mmfile_register_io_func(MMFileIOFunc *iofunc)
 {
 	MMFileIOFunc **ptr = NULL;
 
@@ -290,7 +289,7 @@ int mmfile_register_io_func (MMFileIOFunc *iofunc)
 }
 
 EXPORT_API
-int mmfile_register_io_all ()
+int mmfile_register_io_all()
 {
 	static int initialized = 0;
 
@@ -298,16 +297,16 @@ int mmfile_register_io_all ()
 		return MMFILE_IO_FAILED;
 	}
 
-	is_little_endian = _is_little_endian ();
+	is_little_endian = _is_little_endian();
 	initialized = 1;
 
 	extern MMFileIOFunc mmfile_file_io_handler;
 	extern MMFileIOFunc mmfile_mem_io_handler;
 	extern MMFileIOFunc mmfile_mmap_io_handler;
 
-	mmfile_register_io_func (&mmfile_file_io_handler);
-	mmfile_register_io_func (&mmfile_mem_io_handler);    
-	mmfile_register_io_func (&mmfile_mmap_io_handler);
+	mmfile_register_io_func(&mmfile_file_io_handler);
+	mmfile_register_io_func(&mmfile_mem_io_handler);
+	mmfile_register_io_func(&mmfile_mmap_io_handler);
 
 	return MMFILE_IO_SUCCESS;
 }

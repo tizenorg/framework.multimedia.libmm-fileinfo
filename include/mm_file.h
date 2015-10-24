@@ -127,7 +127,7 @@ MMHandleType tag_attrs = NULL;
 mm_file_create_tag_attrs(&tag_attrs, filename);
 
 // get attributes of tag
-ret = mm_file_get_attrs( tag_attrs,
+ret = mm_file_get_attrs(tag_attrs,
 							&err_attr_name,
 							MM_FILE_TAG_ARTIST, &ctag.artist.value.s_val, &ctag.artist.len,
 							MM_FILE_TAG_ALBUM, &ctag.album.value.s_val, &ctag.album.len,
@@ -148,7 +148,7 @@ mm_file_destroy_tag_attrs(tag_attrs);
 
  *	@endcode
  */
-int mm_file_create_tag_attrs(MMHandleType * tag_attrs, const char * filename);
+int mm_file_create_tag_attrs(MMHandleType *tag_attrs, const char *filename);
 
 /**
  * This function is to destory the tag attribute handle which is created by mm_file_create_tag_attrs().<BR>
@@ -171,7 +171,7 @@ MMHandleType tag_attrs = NULL;
 mm_file_create_tag_attrs(&tag_attrs, filename);
 
 // get attributes of tag
-ret = mm_file_get_attrs( tag_attrs,
+ret = mm_file_get_attrs(tag_attrs,
 							&err_attr_name,
 							MM_FILE_TAG_ARTIST, &ctag.artist.value.s_val, &ctag.artist.len,
 							MM_FILE_TAG_ALBUM, &ctag.album.value.s_val, &ctag.album.len,
@@ -194,23 +194,23 @@ mm_file_destroy_tag_attrs(tag_attrs);
  */
 int mm_file_destroy_tag_attrs(MMHandleType tag_attrs);
 
- /**
-  * This function is to create content attribute from media file.<BR>
-  * Handle can be used to get actual content information by mm_file_get_attrs() after this function.<BR>
-  * Handle should be destroyed using mm_file_destroy_content_attrs() after use.<BR>
-  *
-  * @param	 content_attrs		[out]	content attribute handle.
-  * @param	 filename	[in]	file path.
-  *
-  * @return	This function returns MM_ERROR_NONE on success, or negative value with error code.
-  *
-  * @remark	Filename must be UTF-8 format.
-  *
-  * @pre	File should be exists.
-  * @post	Handle is ready to use.
-  * @see 	mm_file_destroy_content_attrs, mm_file_get_attrs
-  * @par Example:
-  * @code
+/**
+ * This function is to create content attribute from media file.<BR>
+ * Handle can be used to get actual content information by mm_file_get_attrs() after this function.<BR>
+ * Handle should be destroyed using mm_file_destroy_content_attrs() after use.<BR>
+ *
+ * @param	 content_attrs		[out]	content attribute handle.
+ * @param	 filename	[in]	file path.
+ *
+ * @return	This function returns MM_ERROR_NONE on success, or negative value with error code.
+ *
+ * @remark	Filename must be UTF-8 format.
+ *
+ * @pre	File should be exists.
+ * @post	Handle is ready to use.
+ * @see 	mm_file_destroy_content_attrs, mm_file_get_attrs
+ * @par Example:
+ * @code
 #include <mm_file.h>
 
 // get track info
@@ -267,8 +267,8 @@ if (video_track_num)
 
 // Destory content handle
 mm_file_destroy_content_attrs(content_attrs);
-  * @endcode
-  */
+ * @endcode
+ */
 int mm_file_create_content_attrs(MMHandleType *content_attrs, const char *filename);
 
 /**
@@ -447,7 +447,7 @@ int mm_file_get_attrs(MMHandleType attrs, char **err_attr_name, const char *firs
 #include <mm_file.h>
 
 // create tag handle from memory
-mm_file_create_tag_attrs_from_memory (&tag_attrs, data, size, MM_FILE_FORMAT_MP3);
+mm_file_create_tag_attrs_from_memory(&tag_attrs, data, size, MM_FILE_FORMAT_MP3);
 
 // get audio artist & album tag
 mm_file_get_attrs(tag_attrs,
@@ -484,7 +484,7 @@ int mm_file_create_tag_attrs_from_memory(MMHandleType *tag_attrs, const void *da
 #include <mm_file.h>
 
 // create content handle from memory
-mm_file_create_content_attrs_from_memory (&content_attrs, data, size, MM_FILE_FORMAT_MP3);
+mm_file_create_content_attrs_from_memory(&content_attrs, data, size, MM_FILE_FORMAT_MP3);
 
 // get audio bit rate and sample rate
 mm_file_get_attrs(content_attrs,
@@ -523,31 +523,31 @@ printf ("Testing mm_file_get_stream_info()....audio=%d, video=%d\n", audio_track
  * @endcode
  */
 
-int mm_file_get_stream_info(const char* filename, int *audio_stream_num, int *video_stream_num);
+int mm_file_get_stream_info(const char *filename, int *audio_stream_num, int *video_stream_num);
 
- /**
-   * This function is to get the content attributes without thumbnail from media file.<BR>
-   * This function is almost same as mm_file_create_content_attrs() except extracting thumbnail feature.<BR>
-   * As this function is not extracting thumbnail, this is faster than mm_file_create_content_attrs().
-   *
-   * @param	 content_attrs		[out]	content attribute handle.
-   * @param	 filename	[in]	file path.
-   *
-   * @return	This function returns MM_ERROR_NONE on success, or negative value with error code.
-   *
-   * @remark	Filename must be UTF-8 format.
-   *
-   * @pre	File should be exists.
-   * @post	Handle is ready to use.
-   * @see 	mm_file_destroy_content_attrs, mm_file_get_attrs
-   * @par Example::
-   * @code
+/**
+  * This function is to get the content attributes without thumbnail from media file.<BR>
+  * This function is almost same as mm_file_create_content_attrs() except extracting thumbnail feature.<BR>
+  * As this function is not extracting thumbnail, this is faster than mm_file_create_content_attrs().
+  *
+  * @param	 content_attrs		[out]	content attribute handle.
+  * @param	 filename	[in]	file path.
+  *
+  * @return	This function returns MM_ERROR_NONE on success, or negative value with error code.
+  *
+  * @remark	Filename must be UTF-8 format.
+  *
+  * @pre	File should be exists.
+  * @post	Handle is ready to use.
+  * @see 	mm_file_destroy_content_attrs, mm_file_get_attrs
+  * @par Example::
+  * @code
 #include <mm_file.h>
 
 // create content handle
 mm_file_create_content_attrs_simple(&content_attrs, filename);
 
-// get width,height information
+// get width, height information
 mm_file_get_attrs(content_attrs,
 				NULL,
 				MM_FILE_CONTENT_VIDEO_WIDTH, &ccontent.video_w,
@@ -556,8 +556,8 @@ mm_file_get_attrs(content_attrs,
 
 // Destory content handle
 mm_file_destroy_content_attrs(content_attrs);
-   * @endcode
-   */
+  * @endcode
+  */
 int mm_file_create_content_attrs_simple(MMHandleType *content_attrs, const char *filename);
 
 int mm_file_create_content_attrs_safe(MMHandleType *content_attrs, const char *filename);
@@ -586,11 +586,11 @@ int mm_file_get_synclyrics_info(MMHandleType tag_attrs, int index, unsigned long
  * @see metadata_extractor_create(), metadata_extractor_destroy()
  */
 
-int mm_file_get_video_frame(const char* path, double timestamp, bool is_accurate, unsigned char **frame, int *size, int *width, int *height);
+int mm_file_get_video_frame(const char *path, double timestamp, bool is_accurate, unsigned char **frame, int *size, int *width, int *height);
 
 int mm_file_get_video_frame_from_memory(const void *data, unsigned int datasize, double timestamp, bool is_accurate, unsigned char **frame, int *size, int *width, int *height);
 
-int mm_file_check_uhqa(const char* filename, bool *is_uhqa);
+int mm_file_check_uhqa(const char *filename, bool *is_uhqa);
 
 /**
 	@}

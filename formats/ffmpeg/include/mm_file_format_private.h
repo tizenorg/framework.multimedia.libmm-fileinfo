@@ -30,18 +30,18 @@ extern "C" {
 #include "mm_file_formats.h"
 
 /* open functions list: the order of list depends on mm-types.h */
-int mmfile_format_open_dummy (MMFileFormatContext *fileContext);
-int mmfile_format_open_ffmpg (MMFileFormatContext *fileContext);
-int mmfile_format_open_mp3   (MMFileFormatContext *fileContext);
-//int mmfile_format_open_3gp   (MMFileFormatContext *fileContext);
-//int mmfile_format_open_avi   (MMFileFormatContext *fileContext);
-//int mmfile_format_open_asf   (MMFileFormatContext *fileContext);
-int mmfile_format_open_mmf   (MMFileFormatContext *fileContext);
-int mmfile_format_open_amr   (MMFileFormatContext *fileContext);
-int mmfile_format_open_aac   (MMFileFormatContext *fileContext);
-int mmfile_format_open_wav   (MMFileFormatContext *fileContext);
-int mmfile_format_open_mid   (MMFileFormatContext *fileContext);
-int mmfile_format_open_imy   (MMFileFormatContext *fileContext);
+int mmfile_format_open_dummy(MMFileFormatContext *fileContext);
+int mmfile_format_open_ffmpg(MMFileFormatContext *fileContext);
+int mmfile_format_open_mp3(MMFileFormatContext *fileContext);
+/*int mmfile_format_open_3gp(MMFileFormatContext *fileContext); */
+/*int mmfile_format_open_avi(MMFileFormatContext *fileContext); */
+/*int mmfile_format_open_asf(MMFileFormatContext *fileContext); */
+int mmfile_format_open_mmf(MMFileFormatContext *fileContext);
+int mmfile_format_open_amr(MMFileFormatContext *fileContext);
+int mmfile_format_open_aac(MMFileFormatContext *fileContext);
+int mmfile_format_open_wav(MMFileFormatContext *fileContext);
+int mmfile_format_open_mid(MMFileFormatContext *fileContext);
+int mmfile_format_open_imy(MMFileFormatContext *fileContext);
 
 
 #ifdef __cplusplus

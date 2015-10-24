@@ -35,17 +35,17 @@ extern "C" {
 #define MMFILE_FORMAT_FAIL      0
 
 
-#define MM_FILE_SET_MEDIA_FILE_SRC(Media,Filename)		do { \
-	(Media).type = MM_FILE_SRC_TYPE_FILE; \
-	(Media).file.path = ((strstr(Filename,"file://")!=NULL)? Filename+7:Filename); \
-} while (0);
+#define MM_FILE_SET_MEDIA_FILE_SRC(Media, Filename)		do { \
+		(Media).type = MM_FILE_SRC_TYPE_FILE; \
+		(Media).file.path = ((strstr(Filename, "file://")!=NULL) ? Filename+7:Filename); \
+	} while (0);
 
-#define MM_FILE_SET_MEDIA_MEM_SRC(Media,Memory,Size,Format)		do { \
-	(Media).type = MM_FILE_SRC_TYPE_MEMORY; \
-	(Media).memory.ptr = (Memory); \
-	(Media).memory.size = (Size); \
-	(Media).memory.format = (Format); \
-} while (0);
+#define MM_FILE_SET_MEDIA_MEM_SRC(Media, Memory, Size, Format)		do { \
+		(Media).type = MM_FILE_SRC_TYPE_MEMORY; \
+		(Media).memory.ptr = (Memory); \
+		(Media).memory.size = (Size); \
+		(Media).memory.format = (Format); \
+	} while (0);
 
 
 
@@ -53,14 +53,6 @@ enum {
 	MM_FILE_SRC_TYPE_FILE,
 	MM_FILE_SRC_TYPE_MEMORY,
 };
-
-enum {
-	MM_FILE_DRM_NONE = 0,		/*not drm file*/
-	MM_FILE_DRM_OMA,			/*oma drm*/
-	MM_FILE_DRM_DIVX,			/*divx drm*/
-	MM_FILE_DRM_PROTECTED,	/*This is drm file but not oma or divx*/
-};
-
 
 typedef struct _mm_file_source {
 	int		type;
@@ -118,7 +110,6 @@ struct _MMFileFormatContext {
 	/* contents information */
 	int duration;	/* milliseconds */
 	int isseekable;
-	int isdrm;		/*drm type. see MM_FILE_DRM_XXX*/
 	int videoTotalTrackNum;
 	int audioTotalTrackNum;
 	int nbStreams;
@@ -165,18 +156,18 @@ struct _MMFileFormatContext {
 	void *privateCodecData;
 
 	/* function pointer */
-	int (*ReadStream)	(MMFileFormatContext*);
-	int (*ReadFrame)	(MMFileFormatContext*,unsigned int,MMFileFormatFrame*);
-	int (*ReadTag)		(MMFileFormatContext*);
-	int (*Close)		(MMFileFormatContext*);
+	int (*ReadStream)(MMFileFormatContext *);
+	int (*ReadFrame)(MMFileFormatContext *, unsigned int, MMFileFormatFrame *);
+	int (*ReadTag)(MMFileFormatContext *);
+	int (*Close)(MMFileFormatContext *);
 };
 
 #ifndef __MMFILE_DYN_LOADING__
-int mmfile_format_open			(MMFileFormatContext **formatContext, MMFileSourceType *fileSrc);
-int mmfile_format_read_stream	(MMFileFormatContext *formatContext);
-int mmfile_format_read_frame	(MMFileFormatContext *formatContext, unsigned int timestamp, MMFileFormatFrame *frame);
-int mmfile_format_read_tag		(MMFileFormatContext *formatContext);
-int mmfile_format_close			(MMFileFormatContext *formatContext);
+int mmfile_format_open(MMFileFormatContext **formatContext, MMFileSourceType *fileSrc);
+int mmfile_format_read_stream(MMFileFormatContext *formatContext);
+int mmfile_format_read_frame(MMFileFormatContext *formatContext, unsigned int timestamp, MMFileFormatFrame *frame);
+int mmfile_format_read_tag(MMFileFormatContext *formatContext);
+int mmfile_format_close(MMFileFormatContext *formatContext);
 #endif
 
 #ifdef __cplusplus

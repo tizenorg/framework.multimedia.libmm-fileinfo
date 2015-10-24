@@ -32,21 +32,20 @@ extern "C" {
 #define MMFILE_ID3TAG_FAIL      0
 #define MMFILE_ID3TAG_SUCCESS   1
 
-typedef void* MMFileID3TagHandle;
+typedef void *MMFileID3TagHandle;
 
-typedef enum mmfileId3TagInfoVersion
-{
-    MMFILE_ID3TAG_V1_0 = 0,
-    MMFILE_ID3TAG_V1_1,
-    MMFILE_ID3TAG_V2_0,
-    MMFILE_ID3TAG_V2_2,
-    MMFILE_ID3TAG_V2_3,
-    MMFILE_ID3TAG_V2_4,
-    MMFILE_ID3TAG_VMAX,
+typedef enum mmfileId3TagInfoVersion {
+	MMFILE_ID3TAG_V1_0 = 0,
+	MMFILE_ID3TAG_V1_1,
+	MMFILE_ID3TAG_V2_0,
+	MMFILE_ID3TAG_V2_2,
+	MMFILE_ID3TAG_V2_3,
+	MMFILE_ID3TAG_V2_4,
+	MMFILE_ID3TAG_VMAX,
 } eMMFileID3TagVersion;
 
-int MMFileID3V1TagFind (MMFileIOHandle *fp, unsigned char bAppended, unsigned int startOffset, unsigned int endOffset, tMMFileTags *out);
-int MMFileID3V2TagFind (MMFileIOHandle *fp, unsigned char bAppended, unsigned int startOffset, unsigned int endOffset, tMMFileTags *out);
+int MMFileID3V1TagFind(MMFileIOHandle *fp, unsigned char bAppended, unsigned int startOffset, unsigned int endOffset, tMMFileTags *out);
+int MMFileID3V2TagFind(MMFileIOHandle *fp, unsigned char bAppended, unsigned int startOffset, unsigned int endOffset, tMMFileTags *out);
 
 #ifdef __cplusplus
 }

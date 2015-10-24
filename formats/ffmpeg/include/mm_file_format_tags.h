@@ -26,35 +26,33 @@
 extern "C" {
 #endif
 
-typedef void* MMFileTagsHandle;
+typedef void *MMFileTagsHandle;
 
 #define MMFILE_TAGS_SUCCESS   1
 #define MMFILE_TAGS_FAIL      0
 
-typedef enum mmfiletagstype
-{
-    MMFILE_TAG_ID3V1 = 0,
-    MMFILE_TAG_ID3V2,
-    MMFILE_TAG_MUSICAL_MATCH,
-    MMFILE_TAG_LYRICS3,
-    MMFILE_TAG_APE,
-    MMFILE_TAG_MAX,        
+typedef enum mmfiletagstype {
+	MMFILE_TAG_ID3V1 = 0,
+	MMFILE_TAG_ID3V2,
+	MMFILE_TAG_MUSICAL_MATCH,
+	MMFILE_TAG_LYRICS3,
+	MMFILE_TAG_APE,
+	MMFILE_TAG_MAX,
 } eMMFileTagsType;
 
-typedef struct mmfileTags
-{
-    eMMFileTagsType typeOfTag;
-    unsigned char   bAppendedTag;
-    unsigned int    version;
-    unsigned int    startOffset;
-    unsigned int    tagSize;
-    unsigned int    endOffset;
+typedef struct mmfileTags {
+	eMMFileTagsType typeOfTag;
+	unsigned char   bAppendedTag;
+	unsigned int    version;
+	unsigned int    startOffset;
+	unsigned int    tagSize;
+	unsigned int    endOffset;
 } tMMFileTags;
 
-int MMFileOpenTags    (MMFileTagsHandle *tagsHandle, const char *uriName);
-int MMFileGetFirstTag (MMFileTagsHandle  tagsHandle, tMMFileTags *out);
-int MMFileGetNextTag  (MMFileTagsHandle  tagsHandle, tMMFileTags *out);
-int MMFileTagsClose   (MMFileTagsHandle  tagsHandle);
+int MMFileOpenTags(MMFileTagsHandle *tagsHandle, const char *uriName);
+int MMFileGetFirstTag(MMFileTagsHandle  tagsHandle, tMMFileTags *out);
+int MMFileGetNextTag(MMFileTagsHandle  tagsHandle, tMMFileTags *out);
+int MMFileTagsClose(MMFileTagsHandle  tagsHandle);
 
 #ifdef __cplusplus
 }

@@ -30,7 +30,7 @@ extern "C" {
 #include "mm_file_codecs.h"
 
 /* open functions list */
-int mmfile_codec_open_dummy   (MMFileCodecContext *codecContext, MMFileCodecFrame *input);
+int mmfile_codec_open_dummy(MMFileCodecContext *codecContext, MMFileCodecFrame *input);
 
 
 #ifdef __cplusplus

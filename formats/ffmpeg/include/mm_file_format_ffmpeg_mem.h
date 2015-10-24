@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 #include <libavformat/avformat.h>
+#include <libavformat/url.h>
 
 extern URLProtocol MMFileMEMProtocol;
 

@@ -34,40 +34,38 @@ extern "C" {
 #define MMFILE_AUDIO_DECODE    1
 
 
-typedef struct _mmfileframe
-{
-    unsigned int width;
-    unsigned int height;
-    unsigned int version;
-    unsigned int configLen;
-    unsigned int frameDataSize;
-    unsigned char *frameData;
-    void          *configData;
+typedef struct _mmfileframe {
+	unsigned int width;
+	unsigned int height;
+	unsigned int version;
+	unsigned int configLen;
+	unsigned int frameDataSize;
+	unsigned char *frameData;
+	void          *configData;
 } MMFileCodecFrame;
 
 
 typedef struct _mmfilecodecctx MMFileCodecContext;
 
-struct _mmfilecodecctx
-{
-    /* MMFILE_AUDIO_DECODE or MMFILE_VIDEO_DECODE */
-    int codecType;
-    int codecId;
-    int version;
+struct _mmfilecodecctx {
+	/* MMFILE_AUDIO_DECODE or MMFILE_VIDEO_DECODE */
+	int codecType;
+	int codecId;
+	int version;
 
-    /* private data */
-    void *privateData;
+	/* private data */
+	void *privateData;
 
-    /* resource free */
-    int (*Decode)     (MMFileCodecContext*,MMFileCodecFrame*);
-    int (*Close)      (MMFileCodecContext*);
+	/* resource free */
+	int (*Decode)(MMFileCodecContext *, MMFileCodecFrame *);
+	int (*Close)(MMFileCodecContext *);
 };
 
 #ifndef __MMFILE_DYN_LOADING__
-int mmfile_codec_open   (MMFileCodecContext **codecContext, int codecType, int codecId, MMFileCodecFrame *input);
-int mmfile_codec_decode (MMFileCodecContext *codecContext, MMFileCodecFrame *output);
-int mmfile_codec_close  (MMFileCodecContext *codecContext);
-#endif 
+int mmfile_codec_open(MMFileCodecContext **codecContext, int codecType, int codecId, MMFileCodecFrame *input);
+int mmfile_codec_decode(MMFileCodecContext *codecContext, MMFileCodecFrame *output);
+int mmfile_codec_close(MMFileCodecContext *codecContext);
+#endif
 
 #ifdef __cplusplus
 }

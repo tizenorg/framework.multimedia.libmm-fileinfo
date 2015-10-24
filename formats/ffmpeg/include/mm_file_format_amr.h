@@ -34,19 +34,19 @@ extern "C" {
 typedef void* MMFileAMRHandle;
 
 typedef struct _mmfileamrstreaminfo {
-  long long       duration;
-  long long       fileSize;
-  unsigned int    bitRate;
-  unsigned int    samplingRate;
-  unsigned int    frameRate;
-  unsigned int    numAudioChannels;
-  unsigned int    numTracks;
+	long long       duration;
+	long long       fileSize;
+	unsigned int    bitRate;
+	unsigned int    samplingRate;
+	unsigned int    frameRate;
+	unsigned int    numAudioChannels;
+	unsigned int    numTracks;
 } tMMFILE_AMR_STREAM_INFO;
 
 
-int mmfile_amrparser_open (MMFileAMRHandle *handle, const char *src);
-int mmfile_amrparser_get_stream_info (MMFileAMRHandle handle, tMMFILE_AMR_STREAM_INFO *amrinfo);
-int mmfile_amrparser_close (MMFileAMRHandle handle);
+int mmfile_amrparser_open(MMFileAMRHandle *handle, const char *src);
+int mmfile_amrparser_get_stream_info(MMFileAMRHandle handle, tMMFILE_AMR_STREAM_INFO *amrinfo);
+int mmfile_amrparser_close(MMFileAMRHandle handle);
 
 #ifdef __cplusplus
 }

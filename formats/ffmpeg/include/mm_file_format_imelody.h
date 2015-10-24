@@ -26,13 +26,12 @@
 extern "C" {
 #endif
 
-typedef struct mmfileimelodytags
-{
-    char *title;
-    char *composer;
-    int   beat;
-    char *copyright;
-    char *comment;
+typedef struct mmfileimelodytags {
+	char *title;
+	char *composer;
+	int   beat;
+	char *copyright;
+	char *comment;
 } tMMFileImelodyTagInfo;
 
 

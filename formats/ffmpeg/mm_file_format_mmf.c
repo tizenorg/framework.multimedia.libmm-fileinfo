@@ -22,7 +22,7 @@
 #include <string.h>	/*memcmp*/
 #include <stdlib.h>	/*malloc*/
 
-#include "mm_debug.h"
+#include "mm_file_debug.h"
 
 #include "mm_file_utils.h"
 #include "mm_file_format_mmf.h"
@@ -67,7 +67,7 @@
 #define AVMASMW_ERROR_HV_CONFLICT		(-26)	/* conflict about HV resource			*/
 
 #define	AVMALIB_MAKEDWORD(a, b, c, d)	(unsigned int)(((unsigned int)(a) << 24) | \
-						((unsigned int)(b) << 16) | ((unsigned int)(c) << 8) | (unsigned int)(d))
+                                                       ((unsigned int)(b) << 16) | ((unsigned int)(c) << 8) | (unsigned int)(d))
 
 /****************************************************************************
  *	define
@@ -106,38 +106,38 @@
  *	table
  ****************************************************************************/
 static const unsigned short g_crc_tbl[256] = {
-  0x0000U,0x1021U,0x2042U,0x3063U,0x4084U,0x50A5U,0x60C6U,0x70E7U,
-  0x8108U,0x9129U,0xA14AU,0xB16BU,0xC18CU,0xD1ADU,0xE1CEU,0xF1EFU,
-  0x1231U,0x0210U,0x3273U,0x2252U,0x52B5U,0x4294U,0x72F7U,0x62D6U,
-  0x9339U,0x8318U,0xB37BU,0xA35AU,0xD3BDU,0xC39CU,0xF3FFU,0xE3DEU,
-  0x2462U,0x3443U,0x0420U,0x1401U,0x64E6U,0x74C7U,0x44A4U,0x5485U,
-  0xA56AU,0xB54BU,0x8528U,0x9509U,0xE5EEU,0xF5CFU,0xC5ACU,0xD58DU,
-  0x3653U,0x2672U,0x1611U,0x0630U,0x76D7U,0x66F6U,0x5695U,0x46B4U,
-  0xB75BU,0xA77AU,0x9719U,0x8738U,0xF7DFU,0xE7FEU,0xD79DU,0xC7BCU,
-  0x48C4U,0x58E5U,0x6886U,0x78A7U,0x0840U,0x1861U,0x2802U,0x3823U,
-  0xC9CCU,0xD9EDU,0xE98EU,0xF9AFU,0x8948U,0x9969U,0xA90AU,0xB92BU,
-  0x5AF5U,0x4AD4U,0x7AB7U,0x6A96U,0x1A71U,0x0A50U,0x3A33U,0x2A12U,
-  0xDBFDU,0xCBDCU,0xFBBFU,0xEB9EU,0x9B79U,0x8B58U,0xBB3BU,0xAB1AU,
-  0x6CA6U,0x7C87U,0x4CE4U,0x5CC5U,0x2C22U,0x3C03U,0x0C60U,0x1C41U,
-  0xEDAEU,0xFD8FU,0xCDECU,0xDDCDU,0xAD2AU,0xBD0BU,0x8D68U,0x9D49U,
-  0x7E97U,0x6EB6U,0x5ED5U,0x4EF4U,0x3E13U,0x2E32U,0x1E51U,0x0E70U,
-  0xFF9FU,0xEFBEU,0xDFDDU,0xCFFCU,0xBF1BU,0xAF3AU,0x9F59U,0x8F78U,
-  0x9188U,0x81A9U,0xB1CAU,0xA1EBU,0xD10CU,0xC12DU,0xF14EU,0xE16FU,
-  0x1080U,0x00A1U,0x30C2U,0x20E3U,0x5004U,0x4025U,0x7046U,0x6067U,
-  0x83B9U,0x9398U,0xA3FBU,0xB3DAU,0xC33DU,0xD31CU,0xE37FU,0xF35EU,
-  0x02B1U,0x1290U,0x22F3U,0x32D2U,0x4235U,0x5214U,0x6277U,0x7256U,
-  0xB5EAU,0xA5CBU,0x95A8U,0x8589U,0xF56EU,0xE54FU,0xD52CU,0xC50DU,
-  0x34E2U,0x24C3U,0x14A0U,0x0481U,0x7466U,0x6447U,0x5424U,0x4405U,
-  0xA7DBU,0xB7FAU,0x8799U,0x97B8U,0xE75FU,0xF77EU,0xC71DU,0xD73CU,
-  0x26D3U,0x36F2U,0x0691U,0x16B0U,0x6657U,0x7676U,0x4615U,0x5634U,
-  0xD94CU,0xC96DU,0xF90EU,0xE92FU,0x99C8U,0x89E9U,0xB98AU,0xA9ABU,
-  0x5844U,0x4865U,0x7806U,0x6827U,0x18C0U,0x08E1U,0x3882U,0x28A3U,
-  0xCB7DU,0xDB5CU,0xEB3FU,0xFB1EU,0x8BF9U,0x9BD8U,0xABBBU,0xBB9AU,
-  0x4A75U,0x5A54U,0x6A37U,0x7A16U,0x0AF1U,0x1AD0U,0x2AB3U,0x3A92U,
-  0xFD2EU,0xED0FU,0xDD6CU,0xCD4DU,0xBDAAU,0xAD8BU,0x9DE8U,0x8DC9U,
-  0x7C26U,0x6C07U,0x5C64U,0x4C45U,0x3CA2U,0x2C83U,0x1CE0U,0x0CC1U,
-  0xEF1FU,0xFF3EU,0xCF5DU,0xDF7CU,0xAF9BU,0xBFBAU,0x8FD9U,0x9FF8U,
-  0x6E17U,0x7E36U,0x4E55U,0x5E74U,0x2E93U,0x3EB2U,0x0ED1U,0x1EF0U
+	0x0000U, 0x1021U, 0x2042U, 0x3063U, 0x4084U, 0x50A5U, 0x60C6U, 0x70E7U,
+	0x8108U, 0x9129U, 0xA14AU, 0xB16BU, 0xC18CU, 0xD1ADU, 0xE1CEU, 0xF1EFU,
+	0x1231U, 0x0210U, 0x3273U, 0x2252U, 0x52B5U, 0x4294U, 0x72F7U, 0x62D6U,
+	0x9339U, 0x8318U, 0xB37BU, 0xA35AU, 0xD3BDU, 0xC39CU, 0xF3FFU, 0xE3DEU,
+	0x2462U, 0x3443U, 0x0420U, 0x1401U, 0x64E6U, 0x74C7U, 0x44A4U, 0x5485U,
+	0xA56AU, 0xB54BU, 0x8528U, 0x9509U, 0xE5EEU, 0xF5CFU, 0xC5ACU, 0xD58DU,
+	0x3653U, 0x2672U, 0x1611U, 0x0630U, 0x76D7U, 0x66F6U, 0x5695U, 0x46B4U,
+	0xB75BU, 0xA77AU, 0x9719U, 0x8738U, 0xF7DFU, 0xE7FEU, 0xD79DU, 0xC7BCU,
+	0x48C4U, 0x58E5U, 0x6886U, 0x78A7U, 0x0840U, 0x1861U, 0x2802U, 0x3823U,
+	0xC9CCU, 0xD9EDU, 0xE98EU, 0xF9AFU, 0x8948U, 0x9969U, 0xA90AU, 0xB92BU,
+	0x5AF5U, 0x4AD4U, 0x7AB7U, 0x6A96U, 0x1A71U, 0x0A50U, 0x3A33U, 0x2A12U,
+	0xDBFDU, 0xCBDCU, 0xFBBFU, 0xEB9EU, 0x9B79U, 0x8B58U, 0xBB3BU, 0xAB1AU,
+	0x6CA6U, 0x7C87U, 0x4CE4U, 0x5CC5U, 0x2C22U, 0x3C03U, 0x0C60U, 0x1C41U,
+	0xEDAEU, 0xFD8FU, 0xCDECU, 0xDDCDU, 0xAD2AU, 0xBD0BU, 0x8D68U, 0x9D49U,
+	0x7E97U, 0x6EB6U, 0x5ED5U, 0x4EF4U, 0x3E13U, 0x2E32U, 0x1E51U, 0x0E70U,
+	0xFF9FU, 0xEFBEU, 0xDFDDU, 0xCFFCU, 0xBF1BU, 0xAF3AU, 0x9F59U, 0x8F78U,
+	0x9188U, 0x81A9U, 0xB1CAU, 0xA1EBU, 0xD10CU, 0xC12DU, 0xF14EU, 0xE16FU,
+	0x1080U, 0x00A1U, 0x30C2U, 0x20E3U, 0x5004U, 0x4025U, 0x7046U, 0x6067U,
+	0x83B9U, 0x9398U, 0xA3FBU, 0xB3DAU, 0xC33DU, 0xD31CU, 0xE37FU, 0xF35EU,
+	0x02B1U, 0x1290U, 0x22F3U, 0x32D2U, 0x4235U, 0x5214U, 0x6277U, 0x7256U,
+	0xB5EAU, 0xA5CBU, 0x95A8U, 0x8589U, 0xF56EU, 0xE54FU, 0xD52CU, 0xC50DU,
+	0x34E2U, 0x24C3U, 0x14A0U, 0x0481U, 0x7466U, 0x6447U, 0x5424U, 0x4405U,
+	0xA7DBU, 0xB7FAU, 0x8799U, 0x97B8U, 0xE75FU, 0xF77EU, 0xC71DU, 0xD73CU,
+	0x26D3U, 0x36F2U, 0x0691U, 0x16B0U, 0x6657U, 0x7676U, 0x4615U, 0x5634U,
+	0xD94CU, 0xC96DU, 0xF90EU, 0xE92FU, 0x99C8U, 0x89E9U, 0xB98AU, 0xA9ABU,
+	0x5844U, 0x4865U, 0x7806U, 0x6827U, 0x18C0U, 0x08E1U, 0x3882U, 0x28A3U,
+	0xCB7DU, 0xDB5CU, 0xEB3FU, 0xFB1EU, 0x8BF9U, 0x9BD8U, 0xABBBU, 0xBB9AU,
+	0x4A75U, 0x5A54U, 0x6A37U, 0x7A16U, 0x0AF1U, 0x1AD0U, 0x2AB3U, 0x3A92U,
+	0xFD2EU, 0xED0FU, 0xDD6CU, 0xCD4DU, 0xBDAAU, 0xAD8BU, 0x9DE8U, 0x8DC9U,
+	0x7C26U, 0x6C07U, 0x5C64U, 0x4C45U, 0x3CA2U, 0x2C83U, 0x1CE0U, 0x0CC1U,
+	0xEF1FU, 0xFF3EU, 0xCF5DU, 0xDF7CU, 0xAF9BU, 0xBFBAU, 0x8FD9U, 0x9FF8U,
+	0x6E17U, 0x7E36U, 0x4E55U, 0x5E74U, 0x2E93U, 0x3EB2U, 0x0ED1U, 0x1EF0U
 };
 
 /*	phase	*/
@@ -337,8 +337,7 @@ static const unsigned short g_crc_tbl[256] = {
  ****************************************************************************/
 
 /* OPDA infomation structure	*/
-typedef struct AvTagOptionInfo
-{
+typedef struct AvTagOptionInfo {
 	unsigned char	*pbCnti;				/* pointer to CNTI Body				*/
 	unsigned int	dCntiSize;				/* size of CNTI Body				*/
 	unsigned char	*pbOpda;				/* pointer to OPDA Body				*/
@@ -346,8 +345,7 @@ typedef struct AvTagOptionInfo
 } OPTIONINFO, *POPTIONINFO;
 
 /* Track information structure	*/
-typedef struct AvTagTrackInfo
-{
+typedef struct AvTagTrackInfo {
 	unsigned char	*pbMtr;					/* pointer to MTR(ATR) Body			*/
 	unsigned int	dMtrSize;				/* size of MTR(ATR) Body			*/
 	unsigned char	*pbMspi;				/* pointer to MspI(AspI) Body		*/
@@ -369,8 +367,7 @@ typedef struct AvTagTrackInfo
 } TRACKINFO, *PTRACKINFO;
 
 /* Phrase information structure	*/
-typedef struct AvTagPhraseInfo
-{
+typedef struct AvTagPhraseInfo {
 	unsigned int	dStartPoint;			/* start point of phrase(offset)	*/
 	unsigned int	dStopPoint;				/* stop point of phrase(offset)		*/
 	unsigned int	dStartTick;				/* start point of phrase(tick)		*/
@@ -378,8 +375,7 @@ typedef struct AvTagPhraseInfo
 } PHRASEINFO, *PPHRASEINFO;
 
 /* Huffman information structure	*/
-typedef struct AvTagHuffmanInfo
-{
+typedef struct AvTagHuffmanInfo {
 	unsigned int	dMtsqSize;				/* size of Mtsq(Atsq) Body			*/
 	unsigned int	dSeqSize;				/* size of sequence data			*/
 	unsigned int	dReadSize;				/* read data size 					*/
@@ -394,8 +390,7 @@ typedef struct AvTagHuffmanInfo
 } HUFFMANINFO, *PHUFFMANINFO;
 
 /* HV information structure		*/
-typedef struct AvTagHvInfo
-{
+typedef struct AvTagHvInfo {
 	unsigned char	*pbVoice;				/* pointer to HVP0 chunk header		*/
 	unsigned int	dVoiceSize;				/* size of HV voice parameter		*/
 	unsigned char	*pbScript;				/* pointer to Mhsc body				*/
@@ -405,8 +400,7 @@ typedef struct AvTagHvInfo
 
 
 /* Load information structure	*/
-typedef struct AvTagLoadInfo
-{
+typedef struct AvTagLoadInfo {
 	unsigned char	*pbMmmd;				/* pointer to MMMD top				*/
 	unsigned int	dMmmdSize;				/* size of MMMD (whole)				*/
 	unsigned int	dCrc;					/* file CRC							*/
@@ -414,7 +408,7 @@ typedef struct AvTagLoadInfo
 	unsigned int	dPlayTime;				/* play time (tick)					*/
 	unsigned int	dStartTime;				/* start time (start point tick)	*/
 	unsigned int	dTimeBase;				/* time base (msec/tick)			*/
-	unsigned char	(*pfnGetByte)(PHUFFMANINFO psHuf);
+	unsigned char(*pfnGetByte)(PHUFFMANINFO psHuf);
 	OPTIONINFO		sOption_Info;
 	TRACKINFO		sTrack_Info[AV_MMF_MAX_TRACK_NUM];
 	PHRASEINFO		sPhrase_Info[AV_MMF_MAX_PHRASE_INFO];
@@ -423,8 +417,7 @@ typedef struct AvTagLoadInfo
 } LOADINFO, *PLOADINFO;
 
 /* Stream information structure(for MA-2)	*/
-typedef struct AvTagStreamInfo2
-{
+typedef struct AvTagStreamInfo2 {
 	unsigned char	bStrmID;				/* key number of stream				*/
 	unsigned char	*pbWave;				/* pointer to Awa body				*/
 	unsigned int	dWaveSize;				/* size of Awa body					*/
@@ -432,44 +425,38 @@ typedef struct AvTagStreamInfo2
 } STREAMINFO2, *PSTREAMINFO2;
 
 /* Stream information structure(for MA-3/5)	*/
-typedef struct AvTagStreamInfo3
-{
+typedef struct AvTagStreamInfo3 {
 	unsigned char	fbNote;					/* stream data flag					*/
 	unsigned char	bPairID;				/* stream pair ID					*/
 	unsigned char	bPan;					/* stream pan						*/
 } STREAMINFO3, *PSTREAMINFO3;
 
 /* Stream information structure	*/
-typedef struct AvTagStreamInfo
-{
+typedef struct AvTagStreamInfo {
 	STREAMINFO2		sStream_Info2[AV_MMF_MAX_STREAM_DATA_NUM2];
 	STREAMINFO3		sStream_Info3[AV_MMF_MAX_STREAM_DATA_NUM3];
 } STREAMINFO, *PSTREAMINFO;
 
 /* Voice information structure(for MA-1/2)	*/
-typedef struct AvTagVoiceInfo2
-{
+typedef struct AvTagVoiceInfo2 {
 	unsigned char	bBank;					/* bank number						*/
 	unsigned char	bProg;					/* program number					*/
 } VOICEINFO2, *PVOICEINFO2;
 
 /* Wave information structure(for MA-3/5)	*/
-typedef struct AvTagWaveInfo3
-{
+typedef struct AvTagWaveInfo3 {
 	unsigned int	dAdrs;					/* wave address						*/
 	unsigned int	dSize;					/* wave data size					*/
 } WAVEINFO3, *PWAVEINFO3;
 
 /* Voice information structure	*/
-typedef struct AvTagVoiceInfo
-{
+typedef struct AvTagVoiceInfo {
 	VOICEINFO2		sVoice_Info2[AV_MMF_MAX_VOICE_DATA_NUM2];
 	WAVEINFO3		sWave_Info3[AV_MMF_MAX_WAVE_DATA_NUM3];
 } VOICEINFO, *PVOICEINFO;
 
 /* Channel information structure	*/
-typedef struct AvTagChannelInfo
-{
+typedef struct AvTagChannelInfo {
 	unsigned char	bBankM;					/* bank select MSB					*/
 	unsigned char	bBankL;					/* bank select LSB					*/
 	unsigned char	bBank;					/* bank number (sound driver)		*/
@@ -494,8 +481,7 @@ typedef struct AvTagChannelInfo
 } CHANNELINFO, *PCHANNELINFO;
 
 /* Event information structure	*/
-typedef struct AvTagEventBlock
-{
+typedef struct AvTagEventBlock {
 	unsigned int	dEventTime;				/* event activation time			*/
 	unsigned int	dSeqID;					/* sequencer ID (sound driver)		*/
 	unsigned int	dCmd;					/* command ID (sound driver)		*/
@@ -505,23 +491,21 @@ typedef struct AvTagEventBlock
 	unsigned char	*pbSeq;					/* pointer to next event data		*/
 	unsigned int	dIndex;					/* index of next event				*/
 	unsigned int	dTrackNo;				/* track no.						*/
-	void  *			pvNext;					/* pointer to next event block		*/
+	void  			*pvNext;					/* pointer to next event block		*/
 } EVENTBLOCK, *PEVENTBLOCK;
 
 /* Note OFF information structure	*/
-typedef struct AvTagNoteOffBlock
-{
+typedef struct AvTagNoteOffBlock {
 	unsigned int	dOffTime;				/* note off activation time			*/
 	unsigned int	dSeqID;					/* sequencer ID (sound driver)		*/
 	unsigned int	dCmd;					/* command ID (sound driver)		*/
 	unsigned int	dCh;					/* channel no.						*/
 	unsigned int	dKey;					/* key no.							*/
-	void  *			pvNext;					/* pointer to next note off block	*/
+	void  			*pvNext;					/* pointer to next note off block	*/
 } OFFBLOCK, *POFFBLOCK;
 
 /* Playback information structure	*/
-typedef struct AvTagPlayInfo
-{
+typedef struct AvTagPlayInfo {
 	PEVENTBLOCK		psNextEvent;			/* pointer to next event block		*/
 	PEVENTBLOCK		psEmptyEvent;			/* pointer to empty event block		*/
 	POFFBLOCK		psNextOff;				/* pointer to next note off block	*/
@@ -555,8 +539,7 @@ typedef struct AvTagPlayInfo
 } PLAYINFO, *PPLAYINFO;
 
 /* SMAF information structure	*/
-typedef struct AvTagSmafInfo
-{
+typedef struct AvTagSmafInfo {
 	int				sdMmfSeqID;				/* sequence id (sound driver)		*/
 	unsigned int	dStatus;				/* converter status					*/
 	LOADINFO		sLoad_Info[2];
@@ -568,8 +551,8 @@ static const unsigned char g_abBitMaskTable1[8] = {0x01,	0x02,	0x04,	0x08,	0x10,
 static const unsigned short g_awBitMaskTable2[8] = {0x00FF,	0x01FE, 0x03FC,	0x07F8,	0x0FF0,	0x1FE0,	0x3FC0,	0x7F80};
 static const unsigned char g_abTableA[16] = {0, 1, 1, 1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15};
 static const unsigned char g_abTableD[16] = {0, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-static const unsigned char g_abExpression2[16] = {0x80,0x00,0x1f,0x27,0x2f,0x37,0x3f,0x47,0x4f,0x57,0x5f,0x67,0x6f,0x77,0x7f,0x80};
-static const unsigned char g_abModulation2[16] = {0x80,0x00,0x08,0x10,0x18,0x20,0x28,0x30,0x38,0x40,0x48,0x50,0x60,0x70,0x7f,0x80};
+static const unsigned char g_abExpression2[16] = {0x80, 0x00, 0x1f, 0x27, 0x2f, 0x37, 0x3f, 0x47, 0x4f, 0x57, 0x5f, 0x67, 0x6f, 0x77, 0x7f, 0x80};
+static const unsigned char g_abModulation2[16] = {0x80, 0x00, 0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40, 0x48, 0x50, 0x60, 0x70, 0x7f, 0x80};
 
 /**
  * Define.
@@ -584,33 +567,33 @@ static const unsigned char g_abModulation2[16] = {0x80,0x00,0x08,0x10,0x18,0x20,
 
 
 /* internals */
-static int mmf_file_mmf_get_duration (char *src, int is_xmf);
+static int mmf_file_mmf_get_duration(char *src, int is_xmf);
 
 
 
 /* mm plugin porting */
 /* plugin manadatory API */
-int mmfile_format_read_stream_mmf (MMFileFormatContext *formatContext);
-int mmfile_format_read_frame_mmf  (MMFileFormatContext *formatContext, unsigned int timestamp, MMFileFormatFrame *frame);
-int mmfile_format_read_tag_mmf    (MMFileFormatContext *formatContext);
-int mmfile_format_close_mmf       (MMFileFormatContext *formatContext);
+int mmfile_format_read_stream_mmf(MMFileFormatContext *formatContext);
+int mmfile_format_read_frame_mmf(MMFileFormatContext *formatContext, unsigned int timestamp, MMFileFormatFrame *frame);
+int mmfile_format_read_tag_mmf(MMFileFormatContext *formatContext);
+int mmfile_format_close_mmf(MMFileFormatContext *formatContext);
 
 
 EXPORT_API
-int mmfile_format_open_mmf (MMFileFormatContext *formatContext)
-{   
+int mmfile_format_open_mmf(MMFileFormatContext *formatContext)
+{
 	int ret = 0;
 
 	if (NULL == formatContext) {
-		debug_error ("error: formatContext is NULL\n");
-		return MMFILE_FORMAT_FAIL;        
+		debug_error("error: formatContext is NULL\n");
+		return MMFILE_FORMAT_FAIL;
 	}
 
 	if (formatContext->pre_checked == 0) {
-		ret = MMFileFormatIsValidMMF (formatContext->uriFileName);
+		ret = MMFileFormatIsValidMMF(NULL, formatContext->uriFileName);
 		if (ret == 0) {
-			debug_error ("error: it is not MMF file\n");
-			return MMFILE_FORMAT_FAIL;         
+			debug_error("error: it is not MMF file\n");
+			return MMFILE_FORMAT_FAIL;
 		}
 	}
 
@@ -626,51 +609,49 @@ int mmfile_format_open_mmf (MMFileFormatContext *formatContext)
 }
 
 EXPORT_API
-int mmfile_format_read_stream_mmf (MMFileFormatContext *formatContext)
+int mmfile_format_read_stream_mmf(MMFileFormatContext *formatContext)
 {
-    int total = 0;
+	int total = 0;
 
-    total = mmf_file_mmf_get_duration (formatContext->uriFileName, 0 /*not XMF*/);
-    if ( total < 0 )
-    {
-        debug_error ("error: get duration\n");
-        return MMFILE_FORMAT_FAIL;
-    }
+	total = mmf_file_mmf_get_duration(formatContext->uriFileName, 0 /*not XMF*/);
+	if (total < 0) {
+		debug_error("error: get duration\n");
+		return MMFILE_FORMAT_FAIL;
+	}
 
 
-    formatContext->duration = total;
-    formatContext->audioTotalTrackNum = 1;
-    formatContext->nbStreams = 1;
-    formatContext->streams[MMFILE_AUDIO_STREAM] = mmfile_malloc (sizeof(MMFileFormatStream));
-    if (NULL == formatContext->streams[MMFILE_AUDIO_STREAM])
-    {
-        debug_error ("error: mmfile_malloc, audido stream\n");
-        return MMFILE_FORMAT_FAIL;
-    }
+	formatContext->duration = total;
+	formatContext->audioTotalTrackNum = 1;
+	formatContext->nbStreams = 1;
+	formatContext->streams[MMFILE_AUDIO_STREAM] = mmfile_malloc(sizeof(MMFileFormatStream));
+	if (NULL == formatContext->streams[MMFILE_AUDIO_STREAM]) {
+		debug_error("error: mmfile_malloc, audido stream\n");
+		return MMFILE_FORMAT_FAIL;
+	}
 
-    formatContext->streams[MMFILE_AUDIO_STREAM]->codecId =MM_AUDIO_CODEC_MMF;
-    formatContext->streams[MMFILE_AUDIO_STREAM]->nbChannel = 1;
+	formatContext->streams[MMFILE_AUDIO_STREAM]->codecId = MM_AUDIO_CODEC_MMF;
+	formatContext->streams[MMFILE_AUDIO_STREAM]->nbChannel = 1;
 
-    return MMFILE_FORMAT_SUCCESS;
+	return MMFILE_FORMAT_SUCCESS;
 }
 
 EXPORT_API
-int mmfile_format_read_frame_mmf  (MMFileFormatContext *formatContext, unsigned int timestamp, MMFileFormatFrame *frame)
+int mmfile_format_read_frame_mmf(MMFileFormatContext *formatContext, unsigned int timestamp, MMFileFormatFrame *frame)
 {
-    return MMFILE_FORMAT_SUCCESS;
+	return MMFILE_FORMAT_SUCCESS;
 }
 
 
 EXPORT_API
-int mmfile_format_read_tag_mmf    (MMFileFormatContext *formatContext)
+int mmfile_format_read_tag_mmf(MMFileFormatContext *formatContext)
 {
-    return MMFILE_FORMAT_SUCCESS;
+	return MMFILE_FORMAT_SUCCESS;
 }
 
 EXPORT_API
-int mmfile_format_close_mmf (MMFileFormatContext *formatContext)
+int mmfile_format_close_mmf(MMFileFormatContext *formatContext)
 {
-    return MMFILE_FORMAT_SUCCESS;
+	return MMFILE_FORMAT_SUCCESS;
 }
 
 
@@ -685,12 +666,12 @@ int mmfile_format_close_mmf (MMFileFormatContext *formatContext)
  *			nothing
  ********************************************************************************/
 static unsigned int
-_mmf_Get4Byte(unsigned char*	pbBuf)
+_mmf_Get4Byte(unsigned char *pbBuf)
 {
-	return (unsigned int)(	(((unsigned int)pbBuf[0]) << 24) +
-						(((unsigned int)pbBuf[1]) << 16) +
-						(((unsigned int)pbBuf[2]) <<  8) +
-						 ((unsigned int)pbBuf[3]));
+	return (unsigned int)((((unsigned int)pbBuf[0]) << 24) +
+	                      (((unsigned int)pbBuf[1]) << 16) +
+	                      (((unsigned int)pbBuf[2]) <<  8) +
+	                      ((unsigned int)pbBuf[3]));
 }
 
 
@@ -709,7 +690,7 @@ _mmf_CheckInitial(PLOADINFO psLoad)
 {
 	unsigned char				i;
 
-/* Initialize Load information structure	*/
+	/* Initialize Load information structure	*/
 	psLoad->pbMmmd		= NULL;
 	psLoad->dMmmdSize	= 0;
 	psLoad->dCrc		= AV_MMF_CRC_NULL;
@@ -724,8 +705,7 @@ _mmf_CheckInitial(PLOADINFO psLoad)
 	psLoad->sOption_Info.pbOpda		= NULL;
 	psLoad->sOption_Info.dOpdaSize	= 0;
 
-	for ( i = 0; i < AV_MMF_MAX_TRACK_NUM; i++)
-	{
+	for (i = 0; i < AV_MMF_MAX_TRACK_NUM; i++) {
 		psLoad->sTrack_Info[i].pbMtr		= NULL;
 		psLoad->sTrack_Info[i].dMtrSize		= 0;
 		psLoad->sTrack_Info[i].pbMspi		= NULL;
@@ -746,8 +726,7 @@ _mmf_CheckInitial(PLOADINFO psLoad)
 		psLoad->sTrack_Info[i].dStopTick	= AV_MMF_STSP_TIME_NULL;
 	}
 
-	for ( i = 0; i < AV_MMF_MAX_PHRASE_INFO; i++)
-	{
+	for (i = 0; i < AV_MMF_MAX_PHRASE_INFO; i++) {
 		psLoad->sPhrase_Info[i].dStartPoint	= AV_MMF_STSP_OFFSET_NULL;
 		psLoad->sPhrase_Info[i].dStopPoint	= AV_MMF_STSP_OFFSET_NULL;
 		psLoad->sPhrase_Info[i].dStartTick	= AV_MMF_STSP_TIME_NULL;
@@ -776,20 +755,26 @@ _mmf_CheckInitial(PLOADINFO psLoad)
 static int
 _mmf_GetTimebase(unsigned char	bData)
 {
-	switch ( bData )
-	{
-		case 0x02:	return  4;						/*  4[msec/tick]			*/
-		case 0x03:	return  5;						/*  5[msec/tick]			*/
-		case 0x10:	return 10;						/* 10[msec/tick]			*/
-		case 0x11:	return 20;						/* 20[msec/tick]			*/
-		case 0x12:	return 40;						/* 40[msec/tick]			*/
-		case 0x13:	return 50;						/* 50[msec/tick]			*/
-		default:	return AV_MMF_FUNC_ERROR;			/* Time Base Error			*/
+	switch (bData) {
+		case 0x02:
+			return  4;						/*  4[msec/tick]			*/
+		case 0x03:
+			return  5;						/*  5[msec/tick]			*/
+		case 0x10:
+			return 10;						/* 10[msec/tick]			*/
+		case 0x11:
+			return 20;						/* 20[msec/tick]			*/
+		case 0x12:
+			return 40;						/* 40[msec/tick]			*/
+		case 0x13:
+			return 50;						/* 50[msec/tick]			*/
+		default:
+			return AV_MMF_FUNC_ERROR;			/* Time Base Error			*/
 	}
 }
 
 static int
-_mmf_MalibNextChunk(unsigned char* pbFile, unsigned int dSize, unsigned int dState, unsigned int*	pdChunkID, unsigned int* pdChunkNo)
+_mmf_MalibNextChunk(unsigned char *pbFile, unsigned int dSize, unsigned int dState, unsigned int	*pdChunkID, unsigned int *pdChunkNo)
 {
 	unsigned int				dChunkID, dChunkSize;
 
@@ -799,124 +784,122 @@ _mmf_MalibNextChunk(unsigned char* pbFile, unsigned int dSize, unsigned int dSta
 	dChunkID	= AVMALIB_MAKEDWORD(pbFile[0], pbFile[1], pbFile[2], pbFile[3]);
 	dChunkSize	= AVMALIB_MAKEDWORD(pbFile[4], pbFile[5], pbFile[6], pbFile[7]);
 
-	switch (dChunkID)
-	{
-	case AVMALIB_CHUNKID_MMMD :
-		*pdChunkID = AVMALIB_CHUNKCODE_MMMD;
-		if (dState != AVMALIB_CHUNK_PHASE_MMMD)
-			return AVMALIB_CHUNK_ID_ERROR;
-		break;
-	case AVMALIB_CHUNKID_CNTI :
-		*pdChunkID = AVMALIB_CHUNKCODE_CNTI;
-		if (dState != AVMALIB_CHUNK_PHASE_CNTI)
-			return AVMALIB_CHUNK_ID_ERROR;
-		break;
-	case AVMALIB_CHUNKID_OPDA :
-		*pdChunkID = AVMALIB_CHUNKCODE_OPDA;
-		if (dState != AVMALIB_CHUNK_PHASE_MMMDSUB)
-			return AVMALIB_CHUNK_ID_ERROR;
-		break;
-	case AVMALIB_CHUNKID_MSPI :
-		*pdChunkID = AVMALIB_CHUNKCODE_MSPI;
-		if (dState != AVMALIB_CHUNK_PHASE_MTRSUB)
-			return AVMALIB_CHUNK_ID_ERROR;
-		break;
-	case AVMALIB_CHUNKID_MTSU :
-		*pdChunkID = AVMALIB_CHUNKCODE_MTSU;
-		if (dState != AVMALIB_CHUNK_PHASE_MTRSUB)
-			return AVMALIB_CHUNK_ID_ERROR;
-		break;
-	case AVMALIB_CHUNKID_MTSQ :
-		*pdChunkID = AVMALIB_CHUNKCODE_MTSQ;
-		if (dState != AVMALIB_CHUNK_PHASE_MTRSUB)
-			return AVMALIB_CHUNK_ID_ERROR;
-		break;
-	case AVMALIB_CHUNKID_MTSP :
-		*pdChunkID = AVMALIB_CHUNKCODE_MTSP;
-		if (dState != AVMALIB_CHUNK_PHASE_MTRSUB)
-			return AVMALIB_CHUNK_ID_ERROR;
-		break;
-	case AVMALIB_CHUNKID_ASPI :
-		*pdChunkID = AVMALIB_CHUNKCODE_ASPI;
-		if (dState != AVMALIB_CHUNK_PHASE_ATRSUB)
-			return AVMALIB_CHUNK_ID_ERROR;
-		break;
-	case AVMALIB_CHUNKID_ATSU :
-		*pdChunkID = AVMALIB_CHUNKCODE_ATSU;
-		if (dState != AVMALIB_CHUNK_PHASE_ATRSUB)
-			return AVMALIB_CHUNK_ID_ERROR;
-		break;
-	case AVMALIB_CHUNKID_ATSQ :
-		*pdChunkID = AVMALIB_CHUNKCODE_ATSQ;
-		if (dState != AVMALIB_CHUNK_PHASE_ATRSUB)
-			return AVMALIB_CHUNK_ID_ERROR;
-		break;
-
-	case AVMALIB_CHUNKID_MTHV :
-		*pdChunkID = AVMALIB_CHUNKCODE_MTHV;
-		if (dState != AVMALIB_CHUNK_PHASE_MTRSUB)
-			return AVMALIB_CHUNK_ID_ERROR;
-		break;
-	case AVMALIB_CHUNKID_MHVS :
-		*pdChunkID = AVMALIB_CHUNKCODE_MHVS;
-		if (dState != AVMALIB_CHUNK_PHASE_MTHVSUB)
-			return AVMALIB_CHUNK_ID_ERROR;
-		break;
-	case AVMALIB_CHUNKID_MHSC :
-		*pdChunkID = AVMALIB_CHUNKCODE_MHSC;
-		if (dState != AVMALIB_CHUNK_PHASE_MTHVSUB)
-			return AVMALIB_CHUNK_ID_ERROR;
-		break;
-
-	default :
-		*pdChunkNo = (unsigned char)(dChunkID & 0x000000FF);
-		switch (dChunkID & 0xFFFFFF00)
-		{
-		case AVMALIB_CHUNKID_MTR :
-			*pdChunkID = AVMALIB_CHUNKCODE_MTR;
+	switch (dChunkID) {
+		case AVMALIB_CHUNKID_MMMD:
+			*pdChunkID = AVMALIB_CHUNKCODE_MMMD;
+			if (dState != AVMALIB_CHUNK_PHASE_MMMD)
+				return AVMALIB_CHUNK_ID_ERROR;
+			break;
+		case AVMALIB_CHUNKID_CNTI:
+			*pdChunkID = AVMALIB_CHUNKCODE_CNTI;
+			if (dState != AVMALIB_CHUNK_PHASE_CNTI)
+				return AVMALIB_CHUNK_ID_ERROR;
+			break;
+		case AVMALIB_CHUNKID_OPDA:
+			*pdChunkID = AVMALIB_CHUNKCODE_OPDA;
 			if (dState != AVMALIB_CHUNK_PHASE_MMMDSUB)
 				return AVMALIB_CHUNK_ID_ERROR;
 			break;
-		case AVMALIB_CHUNKID_ATR :
-			*pdChunkID = AVMALIB_CHUNKCODE_ATR;
-			if (dState != AVMALIB_CHUNK_PHASE_MMMDSUB)
+		case AVMALIB_CHUNKID_MSPI:
+			*pdChunkID = AVMALIB_CHUNKCODE_MSPI;
+			if (dState != AVMALIB_CHUNK_PHASE_MTRSUB)
 				return AVMALIB_CHUNK_ID_ERROR;
 			break;
-
-		case AVMALIB_CHUNKID_DCH :
-			*pdChunkID = AVMALIB_CHUNKCODE_DCH;
-			if (dState != AVMALIB_CHUNK_PHASE_OPDASUB)
+		case AVMALIB_CHUNKID_MTSU:
+			*pdChunkID = AVMALIB_CHUNKCODE_MTSU;
+			if (dState != AVMALIB_CHUNK_PHASE_MTRSUB)
 				return AVMALIB_CHUNK_ID_ERROR;
 			break;
-		case AVMALIB_CHUNKID_M5P :
-			*pdChunkID = AVMALIB_CHUNKCODE_M5P;
-			if (dState != AVMALIB_CHUNK_PHASE_OPDASUB)
+		case AVMALIB_CHUNKID_MTSQ:
+			*pdChunkID = AVMALIB_CHUNKCODE_MTSQ;
+			if (dState != AVMALIB_CHUNK_PHASE_MTRSUB)
 				return AVMALIB_CHUNK_ID_ERROR;
 			break;
-
-		case AVMALIB_CHUNKID_MWA :
-			*pdChunkID = AVMALIB_CHUNKCODE_MWA;
-			if (dState != AVMALIB_CHUNK_PHASE_MTSPSUB)
+		case AVMALIB_CHUNKID_MTSP:
+			*pdChunkID = AVMALIB_CHUNKCODE_MTSP;
+			if (dState != AVMALIB_CHUNK_PHASE_MTRSUB)
 				return AVMALIB_CHUNK_ID_ERROR;
 			break;
-
-		case AVMALIB_CHUNKID_AWA :
-			*pdChunkID = AVMALIB_CHUNKCODE_AWA;
+		case AVMALIB_CHUNKID_ASPI:
+			*pdChunkID = AVMALIB_CHUNKCODE_ASPI;
+			if (dState != AVMALIB_CHUNK_PHASE_ATRSUB)
+				return AVMALIB_CHUNK_ID_ERROR;
+			break;
+		case AVMALIB_CHUNKID_ATSU:
+			*pdChunkID = AVMALIB_CHUNKCODE_ATSU;
+			if (dState != AVMALIB_CHUNK_PHASE_ATRSUB)
+				return AVMALIB_CHUNK_ID_ERROR;
+			break;
+		case AVMALIB_CHUNKID_ATSQ:
+			*pdChunkID = AVMALIB_CHUNKCODE_ATSQ;
 			if (dState != AVMALIB_CHUNK_PHASE_ATRSUB)
 				return AVMALIB_CHUNK_ID_ERROR;
 			break;
 
-		case AVMALIB_CHUNKID_HVP :
-			*pdChunkID = AVMALIB_CHUNKCODE_HVP;
+		case AVMALIB_CHUNKID_MTHV:
+			*pdChunkID = AVMALIB_CHUNKCODE_MTHV;
+			if (dState != AVMALIB_CHUNK_PHASE_MTRSUB)
+				return AVMALIB_CHUNK_ID_ERROR;
+			break;
+		case AVMALIB_CHUNKID_MHVS:
+			*pdChunkID = AVMALIB_CHUNKCODE_MHVS;
+			if (dState != AVMALIB_CHUNK_PHASE_MTHVSUB)
+				return AVMALIB_CHUNK_ID_ERROR;
+			break;
+		case AVMALIB_CHUNKID_MHSC:
+			*pdChunkID = AVMALIB_CHUNKCODE_MHSC;
 			if (dState != AVMALIB_CHUNK_PHASE_MTHVSUB)
 				return AVMALIB_CHUNK_ID_ERROR;
 			break;
 
-		default :
-			*pdChunkID = AVMALIB_CHUNKCODE_UNKNOWN;
+		default:
+			*pdChunkNo = (unsigned char)(dChunkID & 0x000000FF);
+			switch (dChunkID & 0xFFFFFF00) {
+				case AVMALIB_CHUNKID_MTR:
+					*pdChunkID = AVMALIB_CHUNKCODE_MTR;
+					if (dState != AVMALIB_CHUNK_PHASE_MMMDSUB)
+						return AVMALIB_CHUNK_ID_ERROR;
+					break;
+				case AVMALIB_CHUNKID_ATR:
+					*pdChunkID = AVMALIB_CHUNKCODE_ATR;
+					if (dState != AVMALIB_CHUNK_PHASE_MMMDSUB)
+						return AVMALIB_CHUNK_ID_ERROR;
+					break;
+
+				case AVMALIB_CHUNKID_DCH:
+					*pdChunkID = AVMALIB_CHUNKCODE_DCH;
+					if (dState != AVMALIB_CHUNK_PHASE_OPDASUB)
+						return AVMALIB_CHUNK_ID_ERROR;
+					break;
+				case AVMALIB_CHUNKID_M5P:
+					*pdChunkID = AVMALIB_CHUNKCODE_M5P;
+					if (dState != AVMALIB_CHUNK_PHASE_OPDASUB)
+						return AVMALIB_CHUNK_ID_ERROR;
+					break;
+
+				case AVMALIB_CHUNKID_MWA:
+					*pdChunkID = AVMALIB_CHUNKCODE_MWA;
+					if (dState != AVMALIB_CHUNK_PHASE_MTSPSUB)
+						return AVMALIB_CHUNK_ID_ERROR;
+					break;
+
+				case AVMALIB_CHUNKID_AWA:
+					*pdChunkID = AVMALIB_CHUNKCODE_AWA;
+					if (dState != AVMALIB_CHUNK_PHASE_ATRSUB)
+						return AVMALIB_CHUNK_ID_ERROR;
+					break;
+
+				case AVMALIB_CHUNKID_HVP:
+					*pdChunkID = AVMALIB_CHUNKCODE_HVP;
+					if (dState != AVMALIB_CHUNK_PHASE_MTHVSUB)
+						return AVMALIB_CHUNK_ID_ERROR;
+					break;
+
+				default:
+					*pdChunkID = AVMALIB_CHUNKCODE_UNKNOWN;
+					break;
+			}
 			break;
-		}
-		break;
 	}
 
 	if (dChunkSize > (dSize - AVMALIB_SIZE_OF_CHUNKHEADER))
@@ -944,96 +927,88 @@ _mmf_MTRCheck(PTRACKINFO psTrack, unsigned char	bSmafType)
 {
 	int				sdResult, sdChunkSize;
 	unsigned int				dSize, dIndex;
-	unsigned char*				pbBuf;
+	unsigned char				*pbBuf;
 	unsigned int				dChunkID, dChunkNo;
 
-/* Check Format Type				*/
-	switch (bSmafType)
-	{
-	case AV_MMF_SMAF_TYPE_MA1 :
-	case AV_MMF_SMAF_TYPE_MA2 :
-		if (psTrack->pbMtr[0] != 0x00)
-		{
-			return AV_MMF_ERR_CHUNK;
-		}
-		break;
-	case AV_MMF_SMAF_TYPE_MA3 :
-		if ((psTrack->pbMtr[0] != 0x01) && (psTrack->pbMtr[0] != 0x02))
-		{
-			return AV_MMF_ERR_CHUNK;
-		}
-		break;
-	case AV_MMF_SMAF_TYPE_MA5 :
-		if (psTrack->pbMtr[0] != 0x02)
-		{
-			return AV_MMF_ERR_CHUNK;
-		}
-		break;
+	/* Check Format Type				*/
+	switch (bSmafType) {
+		case AV_MMF_SMAF_TYPE_MA1:
+		case AV_MMF_SMAF_TYPE_MA2:
+			if (psTrack->pbMtr[0] != 0x00) {
+				return AV_MMF_ERR_CHUNK;
+			}
+			break;
+		case AV_MMF_SMAF_TYPE_MA3:
+			if ((psTrack->pbMtr[0] != 0x01) && (psTrack->pbMtr[0] != 0x02)) {
+				return AV_MMF_ERR_CHUNK;
+			}
+			break;
+		case AV_MMF_SMAF_TYPE_MA5:
+			if (psTrack->pbMtr[0] != 0x02) {
+				return AV_MMF_ERR_CHUNK;
+			}
+			break;
+		default:
+			break;
 	}
 
-/* Check Sequence Type		*/
-	if (psTrack->pbMtr[1] != 0x00)
-	{
+	/* Check Sequence Type		*/
+	if (psTrack->pbMtr[1] != 0x00) {
 		return AV_MMF_ERR_CHUNK;
 	}
 
-/* Check Time Base		*/
-	if (psTrack->pbMtr[2] != psTrack->pbMtr[3])
-	{
+	/* Check Time Base		*/
+	if (psTrack->pbMtr[2] != psTrack->pbMtr[3]) {
 		return AV_MMF_ERR_CHUNK;
 	}
 	sdResult = _mmf_GetTimebase(psTrack->pbMtr[2]);
-	if (sdResult == AV_MMF_FUNC_ERROR)
-	{
+	if (sdResult == AV_MMF_FUNC_ERROR) {
 		return AV_MMF_ERR_CHUNK;
 	}
 	psTrack->dTimeBase = (unsigned int)sdResult;
 
-/* Check sub chunk disposition	*/
+	/* Check sub chunk disposition	*/
 	if ((bSmafType == AV_MMF_SMAF_TYPE_MA1) || (bSmafType == AV_MMF_SMAF_TYPE_MA2))
 		dIndex = AV_MMF_MINIMUM_TRACKSIZE2;
 	else
 		dIndex = AV_MMF_MINIMUM_TRACKSIZE3;
 	pbBuf = psTrack->pbMtr;
 	dSize = psTrack->dMtrSize;
-	while (dSize > (dIndex + AV_MMF_CHUNK_HEADER_SIZE))
-	{
-		sdChunkSize = _mmf_MalibNextChunk(&pbBuf[dIndex], (dSize-dIndex),
-			AVMALIB_CHUNK_PHASE_MTRSUB, &dChunkID, &dChunkNo);
-		if (sdChunkSize < 0)
-		{
+	while (dSize > (dIndex + AV_MMF_CHUNK_HEADER_SIZE)) {
+		sdChunkSize = _mmf_MalibNextChunk(&pbBuf[dIndex], (dSize - dIndex),
+		                                  AVMALIB_CHUNK_PHASE_MTRSUB, &dChunkID, &dChunkNo);
+		if (sdChunkSize < 0) {
 			return AV_MMF_ERR_CHUNK;
 		}
 		dIndex += AV_MMF_CHUNK_HEADER_SIZE;
 		switch (dChunkID) {
-		case AVMALIB_CHUNKCODE_MSPI :
-			psTrack->pbMspi		= &(pbBuf[dIndex]);
-			psTrack->dMspiSize	= sdChunkSize;
-			break;
-		case AVMALIB_CHUNKCODE_MTSU :
-			psTrack->pbMtsu		= &(pbBuf[dIndex]);
-			psTrack->dMtsuSize	= sdChunkSize;
-			break;
-		case AVMALIB_CHUNKCODE_MTSQ :
-			psTrack->pbMtsq		= &(pbBuf[dIndex]);
-			psTrack->dMtsqSize	= sdChunkSize;
-			break;
-		case AVMALIB_CHUNKCODE_MTSP :
-			psTrack->pbMtsp		= &(pbBuf[dIndex]);
-			psTrack->dMtspSize	= sdChunkSize;
-			break;
-		case AVMALIB_CHUNKCODE_MTHV :
-			psTrack->pbMthv		= &(pbBuf[dIndex]);
-			psTrack->dMthvSize	= sdChunkSize;
-			break;
-		default :
-			break;
+			case AVMALIB_CHUNKCODE_MSPI:
+				psTrack->pbMspi		= &(pbBuf[dIndex]);
+				psTrack->dMspiSize	= sdChunkSize;
+				break;
+			case AVMALIB_CHUNKCODE_MTSU:
+				psTrack->pbMtsu		= &(pbBuf[dIndex]);
+				psTrack->dMtsuSize	= sdChunkSize;
+				break;
+			case AVMALIB_CHUNKCODE_MTSQ:
+				psTrack->pbMtsq		= &(pbBuf[dIndex]);
+				psTrack->dMtsqSize	= sdChunkSize;
+				break;
+			case AVMALIB_CHUNKCODE_MTSP:
+				psTrack->pbMtsp		= &(pbBuf[dIndex]);
+				psTrack->dMtspSize	= sdChunkSize;
+				break;
+			case AVMALIB_CHUNKCODE_MTHV:
+				psTrack->pbMthv		= &(pbBuf[dIndex]);
+				psTrack->dMthvSize	= sdChunkSize;
+				break;
+			default:
+				break;
 		}
 		dIndex += sdChunkSize;
 	}
 
-	if ((psTrack->pbMtsq == NULL) ||(psTrack->dMtsqSize == 0))
-	{
+	if ((psTrack->pbMtsq == NULL) || (psTrack->dMtsqSize == 0)) {
 		return AV_MMF_ERR_SLENGTH;
 	}
 	return AV_MMF_FUNC_SUCCESS;
@@ -1056,37 +1031,32 @@ _mmf_ATRCheck(PTRACKINFO psTrack)
 {
 	int				sdResult, sdChunkSize;
 	unsigned int				dSize, dIndex;
-	unsigned char*				pbBuf;
+	unsigned char				*pbBuf;
 	unsigned int				dChunkID, dChunkNo;
 	unsigned char				fbWave;
 
-/* Check Format Type				*/
-	if (psTrack->pbMtr[0] != 0x00)
-	{
+	/* Check Format Type				*/
+	if (psTrack->pbMtr[0] != 0x00) {
 		return AV_MMF_ERR_CHUNK;
 	}
 
-/* Check Sequence Type		*/
-	if (psTrack->pbMtr[1] != 0x00)
-	{
+	/* Check Sequence Type		*/
+	if (psTrack->pbMtr[1] != 0x00) {
 		return AV_MMF_ERR_CHUNK;
 	}
 
-/* Check Wave Type			*/
+	/* Check Wave Type			*/
 	if (((psTrack->pbMtr[2] != 0x10) && (psTrack->pbMtr[2] != 0x11)) ||
-		((psTrack->pbMtr[3] & 0xF0) != 0x00))
-	{
+	    ((psTrack->pbMtr[3] & 0xF0) != 0x00)) {
 		return AV_MMF_ERR_CHUNK;
 	}
 
-/* Check Time Base		*/
-	if (psTrack->pbMtr[4] != psTrack->pbMtr[5])
-	{
+	/* Check Time Base		*/
+	if (psTrack->pbMtr[4] != psTrack->pbMtr[5]) {
 		return AV_MMF_ERR_CHUNK;
 	}
 	sdResult = _mmf_GetTimebase(psTrack->pbMtr[4]);
-	if (sdResult == AV_MMF_FUNC_ERROR)
-	{
+	if (sdResult == AV_MMF_FUNC_ERROR) {
 		return AV_MMF_ERR_CHUNK;
 	}
 	psTrack->dTimeBase = (unsigned int)sdResult;
@@ -1096,38 +1066,34 @@ _mmf_ATRCheck(PTRACKINFO psTrack)
 	dIndex	= 6;
 	fbWave	= AV_MMF_MA2_VOICE_NULL;
 
-/* Check sub chunk disposition	*/
-	while (dSize > (dIndex + AV_MMF_CHUNK_HEADER_SIZE))
-	{
-		sdChunkSize = _mmf_MalibNextChunk(&pbBuf[dIndex], (dSize-dIndex),
-			AVMALIB_CHUNK_PHASE_ATRSUB, &dChunkID, &dChunkNo);
-		if (sdChunkSize < 0)
-		{
+	/* Check sub chunk disposition	*/
+	while (dSize > (dIndex + AV_MMF_CHUNK_HEADER_SIZE)) {
+		sdChunkSize = _mmf_MalibNextChunk(&pbBuf[dIndex], (dSize - dIndex),
+		                                  AVMALIB_CHUNK_PHASE_ATRSUB, &dChunkID, &dChunkNo);
+		if (sdChunkSize < 0) {
 			return AV_MMF_ERR_CHUNK;
 		}
 		dIndex += AV_MMF_CHUNK_HEADER_SIZE;
-		switch (dChunkID)
-		{
-		case AVMALIB_CHUNKCODE_ASPI :
-			psTrack->pbMspi		= &(pbBuf[dIndex]);
-			psTrack->dMspiSize	= sdChunkSize;
-			break;
-		case AVMALIB_CHUNKCODE_ATSQ :
-			psTrack->pbMtsq		= &(pbBuf[dIndex]);
-			psTrack->dMtsqSize	= sdChunkSize;
-			break;
-		case AVMALIB_CHUNKCODE_AWA :
-			if ((0x01 <= dChunkNo) && (dChunkNo <= 0x3E))
-				fbWave = AV_MMF_MA2_VOICE_FOUND;
-			break;
-		default :
-			break;
+		switch (dChunkID) {
+			case AVMALIB_CHUNKCODE_ASPI:
+				psTrack->pbMspi		= &(pbBuf[dIndex]);
+				psTrack->dMspiSize	= sdChunkSize;
+				break;
+			case AVMALIB_CHUNKCODE_ATSQ:
+				psTrack->pbMtsq		= &(pbBuf[dIndex]);
+				psTrack->dMtsqSize	= sdChunkSize;
+				break;
+			case AVMALIB_CHUNKCODE_AWA:
+				if ((0x01 <= dChunkNo) && (dChunkNo <= 0x3E))
+					fbWave = AV_MMF_MA2_VOICE_FOUND;
+				break;
+			default:
+				break;
 		}
 		dIndex += sdChunkSize;
 	}
 
-	if ((psTrack->pbMtsq == NULL) ||(psTrack->dMtsqSize == 0) ||(fbWave == AV_MMF_MA2_VOICE_NULL))
-	{
+	if ((psTrack->pbMtsq == NULL) || (psTrack->dMtsqSize == 0) || (fbWave == AV_MMF_MA2_VOICE_NULL)) {
 		return AV_MMF_ERR_SLENGTH;
 	}
 	return AV_MMF_FUNC_SUCCESS;
@@ -1149,7 +1115,7 @@ _mmf_ATRCheck(PTRACKINFO psTrack)
 static void
 _mmf_MspICheck(PTRACKINFO psTrack, PPHRASEINFO psPhrase)
 {
-	unsigned char*				pbBuf;
+	unsigned char				*pbBuf;
 	unsigned int				dSize, dIndex;
 	unsigned short				wTag;
 
@@ -1160,69 +1126,68 @@ _mmf_MspICheck(PTRACKINFO psTrack, PPHRASEINFO psPhrase)
 	dSize	= psTrack->dMspiSize;
 	dIndex	= 0;
 
-	while (dSize >= dIndex + AV_MMF_PHRAZE_SIZE_A)
-	{
-		wTag = (unsigned short)((((unsigned short)pbBuf[dIndex]) << 8) + (unsigned short)pbBuf[dIndex+1]);
+	while (dSize >= dIndex + AV_MMF_PHRAZE_SIZE_A) {
+		wTag = (unsigned short)((((unsigned short)pbBuf[dIndex]) << 8) + (unsigned short)pbBuf[dIndex + 1]);
 		switch (wTag) {
-		case AV_MMF_TAG_STARTPOINT :				/* start point					*/
-			psTrack->dStartPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 3]));
-			dIndex += AV_MMF_PHRAZE_SIZE_A;
-			break;
-		case AV_MMF_TAG_STOPPOINT :				/* stop point					*/
-			psTrack->dStopPoint		= _mmf_Get4Byte(&(pbBuf[dIndex + 3]));
-			dIndex += AV_MMF_PHRAZE_SIZE_A;
-			break;
-		case AV_MMF_TAG_PHRASE_A :					/* A melody						*/
-			if (dSize < dIndex + AV_MMF_PHRAZE_SIZE_B)
-				return ;
-			psPhrase[0].dStartPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 3]));
-			psPhrase[0].dStopPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 7]));
-			dIndex += AV_MMF_PHRAZE_SIZE_B;
-			break;
-		case AV_MMF_TAG_PHRASE_B :					/* B melody						*/
-			if (dSize < dIndex + AV_MMF_PHRAZE_SIZE_B)
-				return ;
-			psPhrase[1].dStartPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 3]));
-			psPhrase[1].dStopPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 7]));
-			dIndex += AV_MMF_PHRAZE_SIZE_B;
-			break;
-		case AV_MMF_TAG_PHRASE_E :					/* Ending						*/
-			if (dSize < dIndex + AV_MMF_PHRAZE_SIZE_B)
-				return ;
-			psPhrase[2].dStartPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 3]));
-			psPhrase[2].dStopPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 7]));
-			dIndex += AV_MMF_PHRAZE_SIZE_B;
-			break;
-		case AV_MMF_TAG_PHRASE_I :					/* Intro						*/
-			if (dSize < dIndex + AV_MMF_PHRAZE_SIZE_B)
-				return ;
-			psPhrase[3].dStartPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 3]));
-			psPhrase[3].dStopPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 7]));
-			dIndex += AV_MMF_PHRAZE_SIZE_B;
-			break;
-		case AV_MMF_TAG_PHRASE_K :					/* Interlude					*/
-			if (dSize < dIndex + AV_MMF_PHRAZE_SIZE_B)
-				return ;
-			psPhrase[4].dStartPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 3]));
-			psPhrase[4].dStopPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 7]));
-			dIndex += AV_MMF_PHRAZE_SIZE_B;
-			break;
-		case AV_MMF_TAG_PHRASE_R :					/* Refrain						*/
-			if (dSize < dIndex + AV_MMF_PHRAZE_SIZE_B)
-				return ;
-			psPhrase[5].dStartPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 3]));
-			psPhrase[5].dStopPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 7]));
-			dIndex += AV_MMF_PHRAZE_SIZE_B;
-			break;
-		case AV_MMF_TAG_PHRASE_S :					/* Bridge						*/
-			if (dSize < dIndex + AV_MMF_PHRAZE_SIZE_B)
-				return ;
-			psPhrase[6].dStartPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 3]));
-			psPhrase[6].dStopPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 7]));
-			dIndex += AV_MMF_PHRAZE_SIZE_B;
-			break;
-		default :
-			return;
+			case AV_MMF_TAG_STARTPOINT:				/* start point					*/
+				psTrack->dStartPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 3]));
+				dIndex += AV_MMF_PHRAZE_SIZE_A;
+				break;
+			case AV_MMF_TAG_STOPPOINT:				/* stop point					*/
+				psTrack->dStopPoint		= _mmf_Get4Byte(&(pbBuf[dIndex + 3]));
+				dIndex += AV_MMF_PHRAZE_SIZE_A;
+				break;
+			case AV_MMF_TAG_PHRASE_A:					/* A melody						*/
+				if (dSize < dIndex + AV_MMF_PHRAZE_SIZE_B)
+					return ;
+				psPhrase[0].dStartPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 3]));
+				psPhrase[0].dStopPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 7]));
+				dIndex += AV_MMF_PHRAZE_SIZE_B;
+				break;
+			case AV_MMF_TAG_PHRASE_B:					/* B melody						*/
+				if (dSize < dIndex + AV_MMF_PHRAZE_SIZE_B)
+					return ;
+				psPhrase[1].dStartPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 3]));
+				psPhrase[1].dStopPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 7]));
+				dIndex += AV_MMF_PHRAZE_SIZE_B;
+				break;
+			case AV_MMF_TAG_PHRASE_E:					/* Ending						*/
+				if (dSize < dIndex + AV_MMF_PHRAZE_SIZE_B)
+					return ;
+				psPhrase[2].dStartPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 3]));
+				psPhrase[2].dStopPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 7]));
+				dIndex += AV_MMF_PHRAZE_SIZE_B;
+				break;
+			case AV_MMF_TAG_PHRASE_I:					/* Intro						*/
+				if (dSize < dIndex + AV_MMF_PHRAZE_SIZE_B)
+					return ;
+				psPhrase[3].dStartPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 3]));
+				psPhrase[3].dStopPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 7]));
+				dIndex += AV_MMF_PHRAZE_SIZE_B;
+				break;
+			case AV_MMF_TAG_PHRASE_K:					/* Interlude					*/
+				if (dSize < dIndex + AV_MMF_PHRAZE_SIZE_B)
+					return ;
+				psPhrase[4].dStartPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 3]));
+				psPhrase[4].dStopPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 7]));
+				dIndex += AV_MMF_PHRAZE_SIZE_B;
+				break;
+			case AV_MMF_TAG_PHRASE_R:					/* Refrain						*/
+				if (dSize < dIndex + AV_MMF_PHRAZE_SIZE_B)
+					return ;
+				psPhrase[5].dStartPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 3]));
+				psPhrase[5].dStopPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 7]));
+				dIndex += AV_MMF_PHRAZE_SIZE_B;
+				break;
+			case AV_MMF_TAG_PHRASE_S:					/* Bridge						*/
+				if (dSize < dIndex + AV_MMF_PHRAZE_SIZE_B)
+					return ;
+				psPhrase[6].dStartPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 3]));
+				psPhrase[6].dStopPoint	= _mmf_Get4Byte(&(pbBuf[dIndex + 7]));
+				dIndex += AV_MMF_PHRAZE_SIZE_B;
+				break;
+			default:
+				return;
 		}
 	}
 	return;
@@ -1241,7 +1206,7 @@ _mmf_MspICheck(PTRACKINFO psTrack, PPHRASEINFO psPhrase)
  *			< 0				error code
  ********************************************************************************/
 static int
-_mmf_STSPCheck(	PTRACKINFO psTrack)
+_mmf_STSPCheck(PTRACKINFO psTrack)
 {
 	unsigned int				dStart, dStop, dSize;
 
@@ -1279,11 +1244,10 @@ _mmf_STSPCheck(	PTRACKINFO psTrack)
 static int
 _mmf_MtsuCheck2(PTRACKINFO	psTrack, unsigned char bSmafType)
 {
-	unsigned char*				pbBuf;
+	unsigned char				*pbBuf;
 	unsigned int				dSize, dIndex;
 
-	if (psTrack->pbMtsu == NULL)
-	{
+	if (psTrack->pbMtsu == NULL) {
 		return AV_MMF_MA2_VOICE_NOTFOUND;
 	}
 
@@ -1291,14 +1255,11 @@ _mmf_MtsuCheck2(PTRACKINFO	psTrack, unsigned char bSmafType)
 	dSize	= psTrack->dMtsuSize;
 	dIndex	= 0;
 
-	while (dSize > dIndex + 20)
-	{
-		if ((pbBuf[dIndex] != 0xFF) || (pbBuf[dIndex + 1] != 0xF0))
-		{
+	while (dSize > dIndex + 20) {
+		if ((pbBuf[dIndex] != 0xFF) || (pbBuf[dIndex + 1] != 0xF0)) {
 			return AV_MMF_MA2_VOICE_NOTFOUND;
 		}
-		if (pbBuf[dIndex + 3] == 0x43)
-		{
+		if (pbBuf[dIndex + 3] == 0x43) {
 			if ((bSmafType == AV_MMF_SMAF_TYPE_MA1) && (pbBuf[dIndex + 4] == 0x02))
 				return AV_MMF_MA2_VOICE_FOUND;
 			if ((bSmafType == AV_MMF_SMAF_TYPE_MA2) && (pbBuf[dIndex + 4] == 0x03))
@@ -1325,26 +1286,22 @@ _mmf_MtsuCheck2(PTRACKINFO	psTrack, unsigned char bSmafType)
  *			< 0				error code
  ********************************************************************************/
 static int
-_mmf_GetFlex2L(unsigned char* pbBuf, unsigned int dSize, unsigned int* pbRead)
+_mmf_GetFlex2L(unsigned char *pbBuf, unsigned int dSize, unsigned int *pbRead)
 {
 	int				sdTemp;
 
 	if ((dSize < 1) || ((dSize < 2) && (pbBuf[0] >= 0x80)))
 		return AV_MMF_FUNC_ERROR;
-	if (dSize >= 4)
-	{
+	if (dSize >= 4) {
 		sdTemp = pbBuf[0] + pbBuf[1] + pbBuf[2] + pbBuf[3];
 		if (sdTemp == 0)
 			return AV_MMF_FUNC_ERROR;
 	}
-	if (pbBuf[0] >= 0x80)
-	{
-		sdTemp = (int)( (((int)(pbBuf[0] & 0x7F)) << 7) +
-							((int)(pbBuf[1] & 0x7F)) + 128 );
+	if (pbBuf[0] >= 0x80) {
+		sdTemp = (int)((((int)(pbBuf[0] & 0x7F)) << 7) +
+		               ((int)(pbBuf[1] & 0x7F)) + 128);
 		*pbRead = 2;
-	}
-	else
-	{
+	} else {
 		sdTemp = (int)(pbBuf[0] & 0x7F);
 		*pbRead = 1;
 	}
@@ -1367,13 +1324,12 @@ _mmf_GetFlex2L(unsigned char* pbBuf, unsigned int dSize, unsigned int* pbRead)
 static int
 _mmf_SeqDataCheck2(PTRACKINFO psTrack, unsigned char bSmafType)
 {
-	unsigned char*				pbBuf;
+	unsigned char				*pbBuf;
 	unsigned int				dSize, dIndex;
 	int				sdTemp;
 	unsigned int				dPast, dGate, dFlexSize;
 
-	if (psTrack->pbMtsq == NULL)
-	{
+	if (psTrack->pbMtsq == NULL) {
 		return AV_MMF_ERR_SLENGTH;
 	}
 
@@ -1383,22 +1339,20 @@ _mmf_SeqDataCheck2(PTRACKINFO psTrack, unsigned char bSmafType)
 	dSize	= psTrack->dMtsqSize;
 	dIndex	= 0;
 
-/* scanning to EOS or stop point					*/
-	while ( dSize > dIndex )
-	{
-		if (psTrack->dStartPoint== dIndex)		/* start point	*/
+	/* scanning to EOS or stop point					*/
+	while (dSize > dIndex) {
+		if (psTrack->dStartPoint == dIndex)		/* start point	*/
 			psTrack->dStartTick	= dPast;
-		if (psTrack->dStopPoint == dIndex)
-		{	/* stop point	*/
+		if (psTrack->dStopPoint == dIndex) {
+			/* stop point	*/
 			psTrack->dStopTick	= dPast;
 			break;
 		}
 
-		if (dSize >= dIndex + 4)
-		{
-			sdTemp=pbBuf[dIndex]+pbBuf[dIndex+1]+pbBuf[dIndex+2]+pbBuf[dIndex+3];
-			if (sdTemp == 0)
-			{					/* EOS			*/
+		if (dSize >= dIndex + 4) {
+			sdTemp = pbBuf[dIndex] + pbBuf[dIndex + 1] + pbBuf[dIndex + 2] + pbBuf[dIndex + 3];
+			if (sdTemp == 0) {
+				/* EOS			*/
 				if (bSmafType == AV_MMF_SMAF_TYPE_MA1)
 					psTrack->dStopTick	= dPast + dGate;
 				else
@@ -1408,13 +1362,11 @@ _mmf_SeqDataCheck2(PTRACKINFO psTrack, unsigned char bSmafType)
 		}
 
 		sdTemp = _mmf_GetFlex2L(&pbBuf[dIndex], (dSize - dIndex), &dFlexSize);
-		if (sdTemp < 0)
-		{
+		if (sdTemp < 0) {
 			return AV_MMF_ERR_CHUNK;
 		}
 		dPast += sdTemp;
-		if (dPast >= AV_MMF_PLAY_TIME_MAX)
-		{
+		if (dPast >= AV_MMF_PLAY_TIME_MAX) {
 			return AV_MMF_ERR_LLENGTH;
 		}
 
@@ -1424,53 +1376,47 @@ _mmf_SeqDataCheck2(PTRACKINFO psTrack, unsigned char bSmafType)
 			dGate -= sdTemp;
 		dIndex += dFlexSize;
 
-		if (dSize < dIndex + 2)
-		{
+		if (dSize < dIndex + 2) {
 			return AV_MMF_ERR_CHUNK;
 		}
 
-		switch (pbBuf[dIndex])
-		{
-		case 0x00 :
-			if ((pbBuf[dIndex + 1] & 0x30) != 0x30)
-				dIndex += 2;
-			else
-				dIndex += 3;
-			break;
-		case 0xFF :
-			switch (pbBuf[dIndex + 1])
-			{
-			case 0x00 :
-				dIndex += 2;
+		switch (pbBuf[dIndex]) {
+			case 0x00:
+				if ((pbBuf[dIndex + 1] & 0x30) != 0x30)
+					dIndex += 2;
+				else
+					dIndex += 3;
 				break;
-			case 0xF0 :
-				if (dSize < dIndex + 3)
-				{
-					return AV_MMF_ERR_CHUNK;
-				}
-				dIndex += (pbBuf[dIndex + 2] + 3);
-				if (dSize < dIndex) {
-					return AV_MMF_ERR_CHUNK;
-				}
-				if (pbBuf[dIndex - 1] != 0xF7)
-				{
-					return AV_MMF_ERR_CHUNK;
+			case 0xFF:
+				switch (pbBuf[dIndex + 1]) {
+					case 0x00:
+						dIndex += 2;
+						break;
+					case 0xF0:
+						if (dSize < dIndex + 3) {
+							return AV_MMF_ERR_CHUNK;
+						}
+						dIndex += (pbBuf[dIndex + 2] + 3);
+						if (dSize < dIndex) {
+							return AV_MMF_ERR_CHUNK;
+						}
+						if (pbBuf[dIndex - 1] != 0xF7) {
+							return AV_MMF_ERR_CHUNK;
+						}
+						break;
+					default:
+						return AV_MMF_ERR_CHUNK;
 				}
 				break;
-			default :
-				return AV_MMF_ERR_CHUNK;
-			}
-			break;
-		default :
-			sdTemp = _mmf_GetFlex2L(&pbBuf[dIndex+1], (dSize - dIndex- 1), &dFlexSize);
-			if (sdTemp < 0)
-			{
-				return AV_MMF_ERR_CHUNK;
-			}
-			if (dGate < (unsigned int)sdTemp)
-				dGate = (unsigned int)sdTemp;
-			dIndex += (1 + dFlexSize);
-			break;
+			default:
+				sdTemp = _mmf_GetFlex2L(&pbBuf[dIndex + 1], (dSize - dIndex - 1), &dFlexSize);
+				if (sdTemp < 0) {
+					return AV_MMF_ERR_CHUNK;
+				}
+				if (dGate < (unsigned int)sdTemp)
+					dGate = (unsigned int)sdTemp;
+				dIndex += (1 + dFlexSize);
+				break;
 		}
 		if (dSize < dIndex) {
 			return AV_MMF_ERR_CHUNK;
@@ -1478,20 +1424,16 @@ _mmf_SeqDataCheck2(PTRACKINFO psTrack, unsigned char bSmafType)
 	}
 
 
-	if (psTrack->dStartTick  == AV_MMF_STSP_TIME_NULL)
-	{
-		if (psTrack->dStartPoint != AV_MMF_STSP_OFFSET_NULL)
-		{
+	if (psTrack->dStartTick  == AV_MMF_STSP_TIME_NULL) {
+		if (psTrack->dStartPoint != AV_MMF_STSP_OFFSET_NULL) {
 			return AV_MMF_ERR_CHUNK;
 		}
 		psTrack->dStartTick = 0;
 	}
 
-/* check start/stop point potision	*/
-	if (psTrack->dStopTick  == AV_MMF_STSP_TIME_NULL)
-	{
-		if ((psTrack->dStopPoint != AV_MMF_STSP_OFFSET_NULL) && (psTrack->dStopPoint != dIndex))
-		{
+	/* check start/stop point potision	*/
+	if (psTrack->dStopTick  == AV_MMF_STSP_TIME_NULL) {
+		if ((psTrack->dStopPoint != AV_MMF_STSP_OFFSET_NULL) && (psTrack->dStopPoint != dIndex)) {
 			return AV_MMF_ERR_CHUNK;
 		}
 		if (bSmafType == AV_MMF_SMAF_TYPE_MA1)
@@ -1500,12 +1442,12 @@ _mmf_SeqDataCheck2(PTRACKINFO psTrack, unsigned char bSmafType)
 			psTrack->dStopTick	= dPast;
 	}
 
-/* calculate playback time of this track	*/
+	/* calculate playback time of this track	*/
 	psTrack->dPlayTime = psTrack->dStopTick - psTrack->dStartTick;
 
-	#ifdef __MMFILE_TEST_MODE__
-	debug_msg ( "Play time: %ld\n", psTrack->dPlayTime);
-	#endif
+#ifdef __MMFILE_TEST_MODE__
+	debug_msg("Play time: %ld\n", psTrack->dPlayTime);
+#endif
 
 	return AV_MMF_FUNC_SUCCESS;
 }
@@ -1529,18 +1471,16 @@ _mmf_TrackChunkCheck2(PLOADINFO psLoad)
 	int				sdResult;
 	unsigned char				i, fbVoice;
 
-/* delete track information of MA-3/5	*/
-		psLoad->sTrack_Info[5].pbMtr	= NULL;
-		psLoad->sTrack_Info[5].dMtrSize	= 0;
-		psLoad->sTrack_Info[6].pbMtr	= NULL;
-		psLoad->sTrack_Info[6].dMtrSize	= 0;
+	/* delete track information of MA-3/5	*/
+	psLoad->sTrack_Info[5].pbMtr	= NULL;
+	psLoad->sTrack_Info[5].dMtrSize	= 0;
+	psLoad->sTrack_Info[6].pbMtr	= NULL;
+	psLoad->sTrack_Info[6].dMtrSize	= 0;
 
-/* fix SMAF Type												*/
+	/* fix SMAF Type												*/
 	psLoad->dSmafType = AV_MMF_SMAF_TYPE_MA1;
-	for (i = 1; i < 5; i++)
-	{
-		if (psLoad->sTrack_Info[i].pbMtr != NULL)
-		{
+	for (i = 1; i < 5; i++) {
+		if (psLoad->sTrack_Info[i].pbMtr != NULL) {
 			psLoad->dSmafType = AV_MMF_SMAF_TYPE_MA2;
 			break;
 		}
@@ -1548,99 +1488,82 @@ _mmf_TrackChunkCheck2(PLOADINFO psLoad)
 	if (psLoad->sTrack_Info[AV_MMF_ATR_TRACK_NO].pbMtr != NULL)
 		psLoad->dSmafType = AV_MMF_SMAF_TYPE_MA2;
 
-	if (psLoad->dSmafType == AV_MMF_SMAF_TYPE_MA1)
-	{	/* MA-1			*/
-		if (psLoad->sTrack_Info[0].pbMtr == NULL)
-		{
+	if (psLoad->dSmafType == AV_MMF_SMAF_TYPE_MA1) {
+		/* MA-1			*/
+		if (psLoad->sTrack_Info[0].pbMtr == NULL) {
 			return AV_MMF_ERR_SLENGTH;
 		}
 		psTrack = &(psLoad->sTrack_Info[0]);
-		if (psTrack->dMtrSize <= AV_MMF_MINIMUM_TRACKSIZE2)
-		{
+		if (psTrack->dMtrSize <= AV_MMF_MINIMUM_TRACKSIZE2) {
 			return AV_MMF_ERR_CHUNK;
 		}
 		sdResult = _mmf_MTRCheck(psTrack, AV_MMF_SMAF_TYPE_MA1);
-		if (sdResult != AV_MMF_FUNC_SUCCESS)
-		{
+		if (sdResult != AV_MMF_FUNC_SUCCESS) {
 			return sdResult;
 		}
 		_mmf_MspICheck(psTrack, &(psLoad->sPhrase_Info[0]));
 		sdResult = _mmf_STSPCheck(psTrack);
-		if (sdResult != AV_MMF_FUNC_SUCCESS)
-		{
+		if (sdResult != AV_MMF_FUNC_SUCCESS) {
 			return sdResult;
 		}
 		sdResult = _mmf_MtsuCheck2(psTrack, AV_MMF_SMAF_TYPE_MA1);
-		if (sdResult != AV_MMF_MA2_VOICE_FOUND)
-		{
+		if (sdResult != AV_MMF_MA2_VOICE_FOUND) {
 			return AV_MMF_ERR_CHUNK;
 		}
 		sdResult = _mmf_SeqDataCheck2(psTrack, AV_MMF_SMAF_TYPE_MA1);
-		if (sdResult != AV_MMF_FUNC_SUCCESS)
-		{
+		if (sdResult != AV_MMF_FUNC_SUCCESS) {
 			return sdResult;
 		}
 		psLoad->dPlayTime	= psTrack->dPlayTime;
 		psLoad->dStartTime	= psTrack->dStartTick;
 		psLoad->dTimeBase	= psTrack->dTimeBase;
 		return AV_MMF_FUNC_SUCCESS;
-	}
-	else
-	{											/* MA-2			*/
+	} else {
+		/* MA-2			*/
 		psLoad->sTrack_Info[0].pbMtr	= NULL;
 		psLoad->sTrack_Info[0].dMtrSize	= 0;
 
-		for (i = 1; i < 5; i++)
-		{
+		for (i = 1; i < 5; i++) {
 			psTrack = &(psLoad->sTrack_Info[i]);
 			if (psTrack->pbMtr == NULL)
 				continue;
-			if (psTrack->dMtrSize <= AV_MMF_MINIMUM_TRACKSIZE2)
-			{
+			if (psTrack->dMtrSize <= AV_MMF_MINIMUM_TRACKSIZE2) {
 				return AV_MMF_ERR_CHUNK;
 			}
 			sdResult = _mmf_MTRCheck(psTrack, AV_MMF_SMAF_TYPE_MA2);
-			if (sdResult != AV_MMF_FUNC_SUCCESS)
-			{
+			if (sdResult != AV_MMF_FUNC_SUCCESS) {
 				return sdResult;
 			}
 			_mmf_MspICheck(psTrack, &(psLoad->sPhrase_Info[0]));
 			sdResult = _mmf_STSPCheck(psTrack);
-			if (sdResult != AV_MMF_FUNC_SUCCESS)
-			{
+			if (sdResult != AV_MMF_FUNC_SUCCESS) {
 				return sdResult;
 			}
 			sdResult = _mmf_SeqDataCheck2(psTrack, AV_MMF_SMAF_TYPE_MA2);
-			if (sdResult != AV_MMF_FUNC_SUCCESS)
-			{
+			if (sdResult != AV_MMF_FUNC_SUCCESS) {
 				return sdResult;
 			}
 			psLoad->dPlayTime	= psTrack->dPlayTime;
 			psLoad->dStartTime	= psTrack->dStartTick;
 			psLoad->dTimeBase	= psTrack->dTimeBase;
 		}
-		if (psLoad->sTrack_Info[AV_MMF_ATR_TRACK_NO].pbMtr != NULL)
-		{
+		if (psLoad->sTrack_Info[AV_MMF_ATR_TRACK_NO].pbMtr != NULL) {
 			psTrack = &(psLoad->sTrack_Info[AV_MMF_ATR_TRACK_NO]);
 
-			if (psTrack->dMtrSize <= AV_MMF_MINIMUM_TRACKSIZE2)
-			{
+			if (psTrack->dMtrSize <= AV_MMF_MINIMUM_TRACKSIZE2) {
 				return AV_MMF_ERR_CHUNK;
 			}
 			sdResult = _mmf_ATRCheck(psTrack);
-			if (sdResult != AV_MMF_FUNC_SUCCESS)
-			{
+			if (sdResult != AV_MMF_FUNC_SUCCESS) {
 				return sdResult;
 			}
 			_mmf_MspICheck(psTrack, &(psLoad->sPhrase_Info[0]));
 			sdResult = _mmf_STSPCheck(psTrack);
-			if (sdResult != AV_MMF_FUNC_SUCCESS)
-			{
+			if (sdResult != AV_MMF_FUNC_SUCCESS) {
 				return sdResult;
 			}
 			sdResult = _mmf_SeqDataCheck2(psTrack, AV_MMF_SMAF_TYPE_MA2);
-			if (sdResult != AV_MMF_FUNC_SUCCESS)
-			{
+			if (sdResult != AV_MMF_FUNC_SUCCESS) {
 				return sdResult;
 			}
 			psLoad->dPlayTime	= psTrack->dPlayTime;
@@ -1648,21 +1571,18 @@ _mmf_TrackChunkCheck2(PLOADINFO psLoad)
 			psLoad->dTimeBase	= psTrack->dTimeBase;
 		}
 
-/* totaling of track information	*/
-		for (i = 1; i < AV_MMF_MAX_TRACK_NUM; i++)
-		{
+		/* totaling of track information	*/
+		for (i = 1; i < AV_MMF_MAX_TRACK_NUM; i++) {
 			psTrack = &(psLoad->sTrack_Info[i]);
 			if (psTrack->pbMtr == NULL)
 				continue;
 
 			if (psLoad->dPlayTime   < psTrack->dPlayTime)
 				psLoad->dPlayTime   = psTrack->dPlayTime;
-			if (psLoad->dTimeBase  != psTrack->dTimeBase)
-			{
+			if (psLoad->dTimeBase  != psTrack->dTimeBase) {
 				return AV_MMF_ERR_CHUNK;
 			}
-			if (psLoad->dStartTime != psTrack->dStartTick)
-			{
+			if (psLoad->dStartTime != psTrack->dStartTick) {
 				return AV_MMF_ERR_CHUNK;
 			}
 			if (_mmf_MtsuCheck2(psTrack, AV_MMF_SMAF_TYPE_MA2) == AV_MMF_FUNC_SUCCESS)
@@ -1670,29 +1590,25 @@ _mmf_TrackChunkCheck2(PLOADINFO psLoad)
 		}
 
 		fbVoice = AV_MMF_MA2_VOICE_FOUND;
-		for (i = 1; i < 5; i++)
-		{
+		for (i = 1; i < 5; i++) {
 			psTrack = &(psLoad->sTrack_Info[i]);
 			if (psTrack->pbMtr == NULL)
 				continue;
-			if (_mmf_MtsuCheck2(psTrack, AV_MMF_SMAF_TYPE_MA2) == AV_MMF_MA2_VOICE_FOUND)
-			{
+			if (_mmf_MtsuCheck2(psTrack, AV_MMF_SMAF_TYPE_MA2) == AV_MMF_MA2_VOICE_FOUND) {
 				fbVoice = AV_MMF_MA2_VOICE_FOUND;
 				break;
-			}
-			else
+			} else
 				fbVoice = AV_MMF_MA2_VOICE_NOTFOUND;
 		}
 
-		if (fbVoice == AV_MMF_MA2_VOICE_NOTFOUND)
-		{
+		if (fbVoice == AV_MMF_MA2_VOICE_NOTFOUND) {
 			return AV_MMF_ERR_CHUNK;
 		}
 	}
 
-	#ifdef __MMFILE_TEST_MODE__
-	debug_msg ( "Play time: %ld\n", psLoad->dPlayTime);
-	#endif
+#ifdef __MMFILE_TEST_MODE__
+	debug_msg("Play time: %ld\n", psLoad->dPlayTime);
+#endif
 
 	return AV_MMF_FUNC_SUCCESS;
 }
@@ -1700,9 +1616,8 @@ _mmf_TrackChunkCheck2(PLOADINFO psLoad)
 static unsigned char
 _mmf_GetByte3L(PHUFFMANINFO	psHuf)
 {
-	psHuf->dReadSize ++;
-	if (psHuf->dReadSize > psHuf->dMtsqSize)
-	{
+	psHuf->dReadSize++;
+	if (psHuf->dReadSize > psHuf->dMtsqSize) {
 		return 0;
 	}
 	return *(psHuf->psBuffer++);
@@ -1722,20 +1637,19 @@ _mmf_GetByte3L(PHUFFMANINFO	psHuf)
  *			< 0				error code
  ********************************************************************************/
 static int
-_mmf_GetFlex3L(PLOADINFO	psLoad, unsigned int* pdRead)
+_mmf_GetFlex3L(PLOADINFO	psLoad, unsigned int *pdRead)
 {
 	unsigned int				dTemp, dRead;
 	unsigned char				bTemp;
 
 	dRead = 1;
-	bTemp = psLoad->pfnGetByte( &(psLoad->sHuffman_Info) );
+	bTemp = psLoad->pfnGetByte(&(psLoad->sHuffman_Info));
 	dTemp = (unsigned int)(bTemp & 0x7F);
-	while (bTemp & 0x80)
-	{
+	while (bTemp & 0x80) {
 		if (dRead >= 4)
 			return AV_MMF_FUNC_ERROR;
-		dRead ++;
-		bTemp = psLoad->pfnGetByte( &(psLoad->sHuffman_Info) );
+		dRead++;
+		bTemp = psLoad->pfnGetByte(&(psLoad->sHuffman_Info));
 		dTemp = (dTemp << 7) + (unsigned int)(bTemp & 0x7F);
 	}
 	if (dTemp >= AV_MMF_PLAY_TIME_MAX)
@@ -1768,14 +1682,13 @@ _mmf_SeqDataCheck3(PLOADINFO psLoad, unsigned char bSmafType)
 	int				sdTemp;
 	unsigned char				bTemp;
 
-	if (bSmafType == AV_MMF_SMAF_TYPE_MA3)
-	{			/* MA-3		*/
+	if (bSmafType == AV_MMF_SMAF_TYPE_MA3) {
+		/* MA-3		*/
 		psTrk		= &(psLoad->sTrack_Info[5]);
 		dStartTick	= AV_MMF_STSP_TIME_NULL;
 		dStopTick	= AV_MMF_STSP_TIME_NULL;
-	}
-	else
-	{											/* MA-5		*/
+	} else {
+		/* MA-5		*/
 		psTrk		= &(psLoad->sTrack_Info[6]);
 		dStartTick	= psTrk->dStartTick;
 		dStopTick	= psTrk->dStopTick;
@@ -1785,36 +1698,31 @@ _mmf_SeqDataCheck3(PLOADINFO psLoad, unsigned char bSmafType)
 
 	psPhr	= &(psLoad->sPhrase_Info[0]);
 	psHuf	= &(psLoad->sHuffman_Info);
-	fdPhrase= 0;
+	fdPhrase = 0;
 	dIndex	= 0;
 	dPast	= 0;
 	dGate	= 0;
 	dSize	= psHuf->dSeqSize;
 
-	if (psHuf->dSeqSize == 0)
-	{
+	if (psHuf->dSeqSize == 0) {
 		return AV_MMF_ERR_SLENGTH;
 	}
 
-	for (i = 0; i < AV_MMF_MAX_PHRASE_INFO; i++)
-	{
+	for (i = 0; i < AV_MMF_MAX_PHRASE_INFO; i++) {
 		if (psPhr[i].dStartPoint != AV_MMF_STSP_OFFSET_NULL)
 			fdPhrase = 1;
 	}
 
-/* scanning sequence data to EOS or stop point	*/
-	while (dSize >= dIndex)
-	{
+	/* scanning sequence data to EOS or stop point	*/
+	while (dSize >= dIndex) {
 
 		if (psTrk->dStartPoint	== dIndex)
 			psTrk->dStartTick	=  dPast;
 		if (psTrk->dStopPoint	== dIndex)			/* stop point		*/
 			psTrk->dStopTick	=  dPast;
-		if (fdPhrase)
-		{
-			for (i = 0; i < AV_MMF_MAX_PHRASE_INFO; i++)
-			{
-				if (psPhr[i].dStartPoint== dIndex)
+		if (fdPhrase) {
+			for (i = 0; i < AV_MMF_MAX_PHRASE_INFO; i++) {
+				if (psPhr[i].dStartPoint == dIndex)
 					psPhr[i].dStartTick	=  dPast;
 				if (psPhr[i].dStopPoint	== dIndex)
 					psPhr[i].dStopTick	=  dPast;
@@ -1829,8 +1737,7 @@ _mmf_SeqDataCheck3(PLOADINFO psLoad, unsigned char bSmafType)
 			return AV_MMF_ERR_CHUNK;
 		}
 		dPast	+= (unsigned int)sdTemp;
-		if (dPast >= AV_MMF_PLAY_TIME_MAX)
-		{
+		if (dPast >= AV_MMF_PLAY_TIME_MAX) {
 			return AV_MMF_ERR_LLENGTH;
 		}
 
@@ -1841,120 +1748,110 @@ _mmf_SeqDataCheck3(PLOADINFO psLoad, unsigned char bSmafType)
 		dIndex += dReadSize;
 
 		bTemp = psLoad->pfnGetByte(psHuf);
-		dIndex ++;
+		dIndex++;
 
-		switch (bTemp & 0xF0)
-		{
-		case 0x90 :
-			psLoad->pfnGetByte(psHuf);	/*Note number*/
-			dIndex ++;
-			psLoad->pfnGetByte(psHuf);	/*Key Velocity*/
-			dIndex ++;
-			sdTemp = _mmf_GetFlex3L(psLoad, &dReadSize);
-			if (sdTemp < 0) {
-				return AV_MMF_ERR_CHUNK;
-			}
-			dIndex += dReadSize;
-			if ((unsigned int)sdTemp > dGate)
-				dGate = sdTemp;
-			break;
-		case 0x80 :
-			psLoad->pfnGetByte(psHuf);	/*Note number*/
-			dIndex ++;
-			sdTemp = _mmf_GetFlex3L(psLoad, &dReadSize);
-			if (sdTemp < 0) {
-				return AV_MMF_ERR_CHUNK;
-			}
-			dIndex += dReadSize;
-			if ((unsigned int)sdTemp > dGate)
-				dGate = sdTemp;
-			break;
-		case 0xA0 :
-		case 0xB0 :
-		case 0xE0 :
-			bTemp = psLoad->pfnGetByte(psHuf);	/*B0: Conrol number, E0:Pitch Bend Change LSB*/
-			dIndex ++;
-			bTemp = psLoad->pfnGetByte(psHuf);	/*B0: Conrol value, E0:Pitch Bend Change MSB*/
-			dIndex ++;
-			break;
-		case 0xC0 :
-		case 0xD0 :
-			bTemp = psLoad->pfnGetByte(psHuf);
-			dIndex ++;
-			break;
-		default :
-			switch (bTemp)
-			{
-			case 0xF0 :
+		switch (bTemp & 0xF0) {
+			case 0x90:
+				psLoad->pfnGetByte(psHuf);	/*Note number*/
+				dIndex++;
+				psLoad->pfnGetByte(psHuf);	/*Key Velocity*/
+				dIndex++;
 				sdTemp = _mmf_GetFlex3L(psLoad, &dReadSize);
 				if (sdTemp < 0) {
 					return AV_MMF_ERR_CHUNK;
 				}
-				for (i = 0; i < (unsigned int)sdTemp; i++)
-					bTemp = psLoad->pfnGetByte(psHuf);
-				if (bTemp != 0xF7) {
+				dIndex += dReadSize;
+				if ((unsigned int)sdTemp > dGate)
+					dGate = sdTemp;
+				break;
+			case 0x80:
+				psLoad->pfnGetByte(psHuf);	/*Note number*/
+				dIndex++;
+				sdTemp = _mmf_GetFlex3L(psLoad, &dReadSize);
+				if (sdTemp < 0) {
 					return AV_MMF_ERR_CHUNK;
 				}
-				dIndex += (unsigned int)sdTemp + dReadSize;
+				dIndex += dReadSize;
+				if ((unsigned int)sdTemp > dGate)
+					dGate = sdTemp;
 				break;
-			case 0xFF :
+			case 0xA0:
+			case 0xB0:
+			case 0xE0:
+				bTemp = psLoad->pfnGetByte(psHuf);	/*B0: Conrol number, E0:Pitch Bend Change LSB*/
+				dIndex++;
+				bTemp = psLoad->pfnGetByte(psHuf);	/*B0: Conrol value, E0:Pitch Bend Change MSB*/
+				dIndex++;
+				break;
+			case 0xC0:
+			case 0xD0:
 				bTemp = psLoad->pfnGetByte(psHuf);
-				dIndex ++;
-				switch (bTemp)
-				{
-				case 0x00 :
-					break;
-				case 0x2F :
-					bTemp = psLoad->pfnGetByte(psHuf);
-					dIndex ++;
-					if (bTemp != 0x00)
-					{
+				dIndex++;
+				break;
+			default:
+				switch (bTemp) {
+					case 0xF0:
+						sdTemp = _mmf_GetFlex3L(psLoad, &dReadSize);
+						if (sdTemp < 0) {
+							return AV_MMF_ERR_CHUNK;
+						}
+						for (i = 0; i < (unsigned int)sdTemp; i++)
+							bTemp = psLoad->pfnGetByte(psHuf);
+						if (bTemp != 0xF7) {
+							return AV_MMF_ERR_CHUNK;
+						}
+						dIndex += (unsigned int)sdTemp + dReadSize;
+						break;
+					case 0xFF:
+						bTemp = psLoad->pfnGetByte(psHuf);
+						dIndex++;
+						switch (bTemp) {
+							case 0x00:
+								break;
+							case 0x2F:
+								bTemp = psLoad->pfnGetByte(psHuf);
+								dIndex++;
+								if (bTemp != 0x00) {
+									return AV_MMF_ERR_CHUNK;
+								}
+								dGate = 0;
+								psTrk->dStopTick = dPast;
+								dIndex = dSize;
+								break;
+							default:
+								return AV_MMF_ERR_CHUNK;
+						}
+						break;
+					default:
 						return AV_MMF_ERR_CHUNK;
-					}
-					dGate = 0;
-					psTrk->dStopTick = dPast;
-					dIndex = dSize;
-					break;
-				default :
-					return AV_MMF_ERR_CHUNK;
 				}
 				break;
-			default :
-				return AV_MMF_ERR_CHUNK;
-			}
-			break;
 		}
-		if ((dSize < dIndex) || (psHuf->dReadSize > psHuf->dMtsqSize))
-		{
+		if ((dSize < dIndex) || (psHuf->dReadSize > psHuf->dMtsqSize)) {
 			return AV_MMF_ERR_CHUNK;
 		}
 	}
 
-	if (bSmafType == AV_MMF_SMAF_TYPE_MA3)
-	{			/* MA-3		*/
-/* check start point				*/
-		if (psTrk->dStartTick == AV_MMF_STSP_TIME_NULL)
-		{
-			if (psTrk->dStartPoint != AV_MMF_STSP_OFFSET_NULL)
-			{
+	if (bSmafType == AV_MMF_SMAF_TYPE_MA3) {
+		/* MA-3		*/
+		/* check start point				*/
+		if (psTrk->dStartTick == AV_MMF_STSP_TIME_NULL) {
+			if (psTrk->dStartPoint != AV_MMF_STSP_OFFSET_NULL) {
 				return AV_MMF_ERR_CHUNK;
 			}
 			psTrk->dStartPoint	= 0;
 			psTrk->dStartTick	= 0;
 		}
-/* check stop point				*/
-		if (psTrk->dStopTick == AV_MMF_STSP_TIME_NULL)
-		{
-			if (psTrk->dStopPoint != AV_MMF_STSP_OFFSET_NULL)
-			{
+		/* check stop point				*/
+		if (psTrk->dStopTick == AV_MMF_STSP_TIME_NULL) {
+			if (psTrk->dStopPoint != AV_MMF_STSP_OFFSET_NULL) {
 				return AV_MMF_ERR_CHUNK;
 			}
 			psTrk->dStopPoint	= dSize;
 			psTrk->dStopTick	= dPast + dGate;
 		}
-/* adjust phrase information	*/
-		for (i = 0; i < AV_MMF_MAX_PHRASE_INFO; i++)
-		{
+		/* adjust phrase information	*/
+		for (i = 0; i < AV_MMF_MAX_PHRASE_INFO; i++) {
 			if (psPhr[i].dStartPoint <= psTrk->dStartPoint)
 				psPhr[i].dStartTick   = psTrk->dStartTick;
 			if (psPhr[i].dStopPoint  >= psTrk->dStopPoint)
@@ -1962,24 +1859,22 @@ _mmf_SeqDataCheck3(PLOADINFO psLoad, unsigned char bSmafType)
 			if (psPhr[i].dStopPoint  <= psTrk->dStartPoint)
 				psPhr[i].dStopTick    = AV_MMF_STSP_TIME_NULL;
 		}
-	}
-	else
-	{											/* MA-5		*/
-/* check stop point				*/
-		if (dStopTick > dPast)
-		{
+	} else {
+		/* MA-5		*/
+		/* check stop point				*/
+		if (dStopTick > dPast) {
 			return AV_MMF_ERR_CHUNK;
 		}
 		psTrk->dStartTick	= dStartTick;
 		psTrk->dStopTick	= dStopTick;
 	}
 
-/* calculate playback time of this track	*/
+	/* calculate playback time of this track	*/
 	psTrk->dPlayTime = psTrk->dStopTick - psTrk->dStartTick;
 
-	#ifdef __MMFILE_TEST_MODE__
-	debug_msg ( "Play time: %ld\n", psTrk->dPlayTime);
-	#endif
+#ifdef __MMFILE_TEST_MODE__
+	debug_msg("Play time: %ld\n", psTrk->dPlayTime);
+#endif
 
 	return AV_MMF_FUNC_SUCCESS;
 }
@@ -2004,13 +1899,12 @@ _mmf_DecodeGetbitL(PHUFFMANINFO psHuf)
 {
 	char czero = 0;
 
-	if (--psHuf->sbBitC < czero)
-	{
+	if (--psHuf->sbBitC < czero) {
 		if (psHuf->dReadSize >= psHuf->dMtsqSize)
 			return 0;
 		psHuf->sbBitC	= 7;
 		psHuf->bByte	= *(psHuf->psBuffer++);
-		psHuf->dReadSize ++;
+		psHuf->dReadSize++;
 	}
 	return (unsigned char)(psHuf->bByte & g_abBitMaskTable1[(int)(psHuf->sbBitC)]);
 }
@@ -2037,7 +1931,7 @@ _mmf_DecodeGetbits(PHUFFMANINFO psHuf)
 	bData1	= psHuf->bByte;
 	bData2	= *(psHuf->psBuffer++);
 	psHuf->bByte = bData2;
-	psHuf->dReadSize ++;
+	psHuf->dReadSize++;
 	wTemp = (unsigned short)((((unsigned short)bData1) << 8) + ((unsigned short)bData2));
 	return (unsigned char)((wTemp & g_awBitMaskTable2[(int)(psHuf->sbBitC)]) >> psHuf->sbBitC);
 }
@@ -2055,22 +1949,20 @@ _mmf_DecodeGetbits(PHUFFMANINFO psHuf)
  *			0				error
  ********************************************************************************/
 static int
-_mmf_DecodeTree(	PHUFFMANINFO psHuf)
+_mmf_DecodeTree(PHUFFMANINFO psHuf)
 {
 	unsigned int				dNode, dEmpty, dIndex, i;
 	short				*pswLeft, *pswRight, *pswPNode;
 	unsigned char				bTemp;
 
-    	if (_mmf_DecodeGetbitL(psHuf))
-	{
+	if (_mmf_DecodeGetbitL(psHuf)) {
 		if (psHuf->dReadSize >= psHuf->dMtsqSize)
 			return AV_MMF_HUFFMAN_TREE_FAILURE;
 
 		pswLeft	= &(psHuf->swLeft[256]);
-		pswRight= &(psHuf->swRight[256]);
-		pswPNode= &(psHuf->swRight[0]);
-		for (i = 0; i < 256; i++)
-		{
+		pswRight = &(psHuf->swRight[256]);
+		pswPNode = &(psHuf->swRight[0]);
+		for (i = 0; i < 256; i++) {
 			pswLeft[i]	= -1;
 			pswRight[i]	= -1;
 			pswPNode[i]	= 0;
@@ -2078,12 +1970,10 @@ _mmf_DecodeTree(	PHUFFMANINFO psHuf)
 		dNode	= 2;
 		dEmpty	= 1;
 		dIndex	= 0;
-	}
-	else
+	} else
 		return AV_MMF_HUFFMAN_TREE_FAILURE;
 
-	while (dNode != 0)
-	{
+	while (dNode != 0) {
 		if ((dEmpty >= 256) || (dNode >= 257))
 			return AV_MMF_HUFFMAN_TREE_FAILURE;
 
@@ -2091,37 +1981,32 @@ _mmf_DecodeTree(	PHUFFMANINFO psHuf)
 		if (psHuf->dReadSize >= psHuf->dMtsqSize)
 			return AV_MMF_HUFFMAN_TREE_FAILURE;
 
-		if (bTemp)
-		{
-			dNode ++;
+		if (bTemp) {
+			dNode++;
 			if (pswLeft[dIndex] == -1)
 				pswLeft[dIndex]	= (short)(dEmpty + 256);
 			else
-				pswRight[dIndex]= (short)(dEmpty + 256);
+				pswRight[dIndex] = (short)(dEmpty + 256);
 			pswPNode[dEmpty] = (short)dIndex;
 			dIndex = dEmpty;
-			dEmpty ++;
-		}
-		else
-		{
-			dNode --;
+			dEmpty++;
+		} else {
+			dNode--;
 			bTemp = _mmf_DecodeGetbits(psHuf);
 			if (psHuf->dReadSize >= psHuf->dMtsqSize)
 				return AV_MMF_HUFFMAN_TREE_FAILURE;
 
 			if (pswLeft[dIndex] == -1)
 				pswLeft[dIndex]	= (short)bTemp;
-			else
-			{
-				pswRight[dIndex]= (short)bTemp;
+			else {
+				pswRight[dIndex] = (short)bTemp;
 				while ((pswRight[dIndex] != -1) && (dIndex != 0))
 					dIndex = (unsigned int)pswPNode[dIndex];
 			}
 		}
 	}
 
-	for (i = 0; i < 256; i++)
-	{
+	for (i = 0; i < 256; i++) {
 		if (pswLeft[i]	== -1)
 			pswLeft[i]	= 0;
 		if (pswRight[i]	== -1)
@@ -2147,8 +2032,7 @@ _mmf_DecodeInit(PHUFFMANINFO	psHuf)
 {
 	unsigned int				dSeqSize;
 
-	if (psHuf->dMtsqSize <= 5)
-	{
+	if (psHuf->dMtsqSize <= 5) {
 		return AV_MMF_HUFFMAN_TREE_FAILURE;
 	}
 
@@ -2176,16 +2060,14 @@ _mmf_DecodeInit(PHUFFMANINFO	psHuf)
  *			0				error code
  ********************************************************************************/
 static unsigned char
-_mmf_DecodeByte3L (PHUFFMANINFO		psHuf)
+_mmf_DecodeByte3L(PHUFFMANINFO		psHuf)
 {
 	unsigned int				bData, bIndex;
 	char czero = 0;
 	bIndex = 256;
-	while (bIndex >= 256)
-	{
-		if (--psHuf->sbBitC < czero)
-		{
-			psHuf->dReadSize ++;
+	while (bIndex >= 256) {
+		if (--psHuf->sbBitC < czero) {
+			psHuf->dReadSize++;
 			if (psHuf->dReadSize > psHuf->dMtsqSize)
 				return 0;
 			psHuf->sbBitC	= 7;
@@ -2218,18 +2100,15 @@ _mmf_TrackChunkCheck3(PLOADINFO psLoad)
 	PTRACKINFO			psTrack;
 	int				sdResult;
 
-	if (psLoad->sTrack_Info[5].pbMtr == NULL)
-	{
+	if (psLoad->sTrack_Info[5].pbMtr == NULL) {
 		return AV_MMF_ERR_SLENGTH;
 	}
 	psTrack = &(psLoad->sTrack_Info[5]);
-	if (psTrack->dMtrSize <= AV_MMF_MINIMUM_TRACKSIZE3)
-	{
+	if (psTrack->dMtrSize <= AV_MMF_MINIMUM_TRACKSIZE3) {
 		return AV_MMF_ERR_CHUNK;
 	}
 	sdResult = _mmf_MTRCheck(psTrack, AV_MMF_SMAF_TYPE_MA3);
-	if (sdResult != AV_MMF_FUNC_SUCCESS)
-	{
+	if (sdResult != AV_MMF_FUNC_SUCCESS) {
 		return sdResult;
 	}
 	_mmf_MspICheck(psTrack, &(psLoad->sPhrase_Info[0]));
@@ -2237,21 +2116,19 @@ _mmf_TrackChunkCheck3(PLOADINFO psLoad)
 	psLoad->sHuffman_Info.psBuffer	= psTrack->pbMtsq;
 	psLoad->sHuffman_Info.dMtsqSize	= psTrack->dMtsqSize;
 
-/* Initialize Huffman information structure	*/
-	if (psTrack->pbMtr[0] == 0x01)
-	{			/* Compressed Foramt	*/
-		psLoad->sHuffman_Info.dSeqSize = _mmf_DecodeInit( &(psLoad->sHuffman_Info) );
-		if (psLoad->sHuffman_Info.dSeqSize == AV_MMF_HUFFMAN_TREE_FAILURE)
-		{
+	/* Initialize Huffman information structure	*/
+	if (psTrack->pbMtr[0] == 0x01) {
+		/* Compressed Foramt	*/
+		psLoad->sHuffman_Info.dSeqSize = _mmf_DecodeInit(&(psLoad->sHuffman_Info));
+		if (psLoad->sHuffman_Info.dSeqSize == AV_MMF_HUFFMAN_TREE_FAILURE) {
 			return AV_MMF_ERR_CHUNK;
 		}
 		psLoad->pfnGetByte = _mmf_DecodeByte3L;
 		psLoad->sHuffman_Info.psFBuf	= psLoad->sHuffman_Info.psBuffer;
 		psLoad->sHuffman_Info.sbFBit	= psLoad->sHuffman_Info.sbBitC;
 		psLoad->sHuffman_Info.bFByte	= psLoad->sHuffman_Info.bByte;
-	}
-	else
-	{										/* No Compressed Foramt	*/
+	} else {
+		/* No Compressed Foramt	*/
 		psLoad->pfnGetByte = _mmf_GetByte3L;
 		psLoad->sHuffman_Info.dSeqSize	= psTrack->dMtsqSize;
 		psLoad->sHuffman_Info.dReadSize	= 0;
@@ -2264,22 +2141,20 @@ _mmf_TrackChunkCheck3(PLOADINFO psLoad)
 	sdResult = _mmf_STSPCheck(psTrack);
 	psTrack->dMtsqSize = psLoad->sHuffman_Info.dMtsqSize;
 
-	if (sdResult != AV_MMF_FUNC_SUCCESS)
-	{
+	if (sdResult != AV_MMF_FUNC_SUCCESS) {
 		return sdResult;
 	}
 	sdResult = _mmf_SeqDataCheck3(psLoad, AV_MMF_SMAF_TYPE_MA3);
-	if (sdResult != AV_MMF_FUNC_SUCCESS)
-	{
+	if (sdResult != AV_MMF_FUNC_SUCCESS) {
 		return sdResult;
 	}
 	psLoad->dPlayTime	= psTrack->dPlayTime;
 	psLoad->dStartTime	= psTrack->dStartTick;
 	psLoad->dTimeBase	= psTrack->dTimeBase;
 
-	#ifdef __MMFILE_TEST_MODE__
-	debug_msg ( "Play time: %ld\n", psLoad->dPlayTime);
-	#endif
+#ifdef __MMFILE_TEST_MODE__
+	debug_msg("Play time: %ld\n", psLoad->dPlayTime);
+#endif
 
 	return AV_MMF_FUNC_SUCCESS;
 }
@@ -2316,15 +2191,13 @@ _mmf_CheckM5P(PLOADINFO psLoad)
 	pbM5p	= NULL;
 	dMSize	= 0;
 
-/* search Pro5 Chunk	*/
-	while (dOSize > (dIndex + AV_MMF_CHUNK_HEADER_SIZE))
-	{
+	/* search Pro5 Chunk	*/
+	while (dOSize > (dIndex + AV_MMF_CHUNK_HEADER_SIZE)) {
 		sdChunkSize = _mmf_MalibNextChunk(&pbOpda[dIndex], (dOSize - dIndex),
-			AVMALIB_CHUNK_PHASE_OPDASUB, &dChunkID, &dChunkNo);
+		                                  AVMALIB_CHUNK_PHASE_OPDASUB, &dChunkID, &dChunkNo);
 		if (sdChunkSize < AVMASMW_SUCCESS)		return AVMASMW_ERROR;
 		dIndex += AV_MMF_CHUNK_HEADER_SIZE;
-		if ((dChunkID == AVMALIB_CHUNKCODE_M5P) && (dChunkNo == 0x05))
-		{
+		if ((dChunkID == AVMALIB_CHUNKCODE_M5P) && (dChunkNo == 0x05)) {
 			pbM5p	= &pbOpda[dIndex];
 			dMSize	= (unsigned int)sdChunkSize;
 			break;
@@ -2341,15 +2214,12 @@ _mmf_CheckM5P(PLOADINFO psLoad)
 
 	if (psTrk->dStartTick >= psTrk->dStopTick)	return AVMASMW_ERROR;
 
-	for (i = 0; i < AV_MMF_MAX_PHRASE_INFO; i ++)
-	{
+	for (i = 0; i < AV_MMF_MAX_PHRASE_INFO; i++) {
 		if (dMSize < (dIndex + 8))		break;
-		if (dPhraseFlag & (0x80000000 >> i))
-		{
+		if (dPhraseFlag & (0x80000000 >> i)) {
 			psPhr[i].dStartTick	= _mmf_Get4Byte(&pbM5p[dIndex]);
 			psPhr[i].dStopTick	= _mmf_Get4Byte(&pbM5p[dIndex + 4]);
-			if (psPhr[i].dStartTick >= psPhr[i].dStopTick)
-			{
+			if (psPhr[i].dStartTick >= psPhr[i].dStopTick) {
 				psPhr[i].dStartTick	= AV_MMF_STSP_TIME_NULL;
 				psPhr[i].dStopTick	= AV_MMF_STSP_TIME_NULL;
 			}
@@ -2382,13 +2252,11 @@ _mmf_TrackChunkCheck5(PLOADINFO psLoad)
 	PTRACKINFO			psTrack;
 	int				sdResult;
 
-	if (psLoad->sTrack_Info[6].pbMtr == NULL)
-	{
+	if (psLoad->sTrack_Info[6].pbMtr == NULL) {
 		return AV_MMF_ERR_SLENGTH;
 	}
 	psTrack = &(psLoad->sTrack_Info[6]);
-	if (psTrack->dMtrSize <= AV_MMF_MINIMUM_TRACKSIZE3)
-	{
+	if (psTrack->dMtrSize <= AV_MMF_MINIMUM_TRACKSIZE3) {
 		return AV_MMF_ERR_CHUNK;
 	}
 	sdResult = _mmf_MTRCheck(psTrack, AV_MMF_SMAF_TYPE_MA5);
@@ -2408,9 +2276,9 @@ _mmf_TrackChunkCheck5(PLOADINFO psLoad)
 	psLoad->dStartTime	= psTrack->dStartTick;
 	psLoad->dTimeBase	= psTrack->dTimeBase;
 
-	#ifdef __MMFILE_TEST_MODE__
-	debug_msg ( "Play time: %ld\n", psLoad->dPlayTime);
-	#endif
+#ifdef __MMFILE_TEST_MODE__
+	debug_msg("Play time: %ld\n", psLoad->dPlayTime);
+#endif
 
 	return AV_MMF_FUNC_SUCCESS;
 }
@@ -2428,12 +2296,12 @@ _mmf_TrackChunkCheck5(PLOADINFO psLoad)
 static void
 _mmf_GetHvData(PLOADINFO psLoad, unsigned char bCType)
 {
-	unsigned char*				pbHvData;
+	unsigned char				*pbHvData;
 	unsigned int				dHvDataSize;
 
-	unsigned char*				pbVoice;
-	unsigned char*				pbScript;
-	unsigned char*				pbSetup;
+	unsigned char				*pbVoice;
+	unsigned char				*pbScript;
+	unsigned char				*pbSetup;
 	unsigned int				dVoiceSize, dScriptSize, dSetupSize, dIndex;
 	unsigned char				bHvCh;
 	unsigned short				wTag, wSize;
@@ -2441,19 +2309,16 @@ _mmf_GetHvData(PLOADINFO psLoad, unsigned char bCType)
 	unsigned int				dChunkID, dChunkNo;
 	int				sdChunkSize;
 
-	if ((psLoad->dSmafType == AV_MMF_SMAF_TYPE_MA1) ||(psLoad->dSmafType == AV_MMF_SMAF_TYPE_MA2))
+	if ((psLoad->dSmafType == AV_MMF_SMAF_TYPE_MA1) || (psLoad->dSmafType == AV_MMF_SMAF_TYPE_MA2))
 		return ;
 
 	if ((bCType & 0x0F) == 0x08)
 		return ;
 
-	if (psLoad->dSmafType == AV_MMF_SMAF_TYPE_MA3)
-	{
+	if (psLoad->dSmafType == AV_MMF_SMAF_TYPE_MA3) {
 		pbHvData	= psLoad->sTrack_Info[5].pbMthv;
 		dHvDataSize	= psLoad->sTrack_Info[5].dMthvSize;
-	}
-	else
-	{
+	} else {
 		pbHvData	= psLoad->sTrack_Info[6].pbMthv;
 		dHvDataSize	= psLoad->sTrack_Info[6].dMthvSize;
 	}
@@ -2470,35 +2335,34 @@ _mmf_GetHvData(PLOADINFO psLoad, unsigned char bCType)
 	bHvCh		= AV_MMF_HV_CHANNEL_NULL;
 	dIndex		= 0;
 
-	while (dHvDataSize > (dIndex + AV_MMF_CHUNK_HEADER_SIZE))
-	{
+	while (dHvDataSize > (dIndex + AV_MMF_CHUNK_HEADER_SIZE)) {
 		sdChunkSize	= _mmf_MalibNextChunk(&(pbHvData[dIndex]), (dHvDataSize - dIndex),
-			AVMALIB_CHUNK_PHASE_MTHVSUB, &dChunkID, &dChunkNo);
+		                                  AVMALIB_CHUNK_PHASE_MTHVSUB, &dChunkID, &dChunkNo);
 		if (sdChunkSize < 0)		return ;
 		dIndex	+= AV_MMF_CHUNK_HEADER_SIZE;
-		switch (dChunkID)
-		{
-		case AVMALIB_CHUNKCODE_MHVS :
-			pbSetup		= &(pbHvData[dIndex]);
-			dSetupSize	= (unsigned int)sdChunkSize;
-			break;
-		case AVMALIB_CHUNKCODE_HVP :
-			if (dChunkNo != 0)		break;
-			pbVoice		= &(pbHvData[dIndex - AV_MMF_CHUNK_HEADER_SIZE]);
-			dVoiceSize	= (unsigned int)(sdChunkSize + AV_MMF_CHUNK_HEADER_SIZE);
-			break;
-		case AVMALIB_CHUNKCODE_MHSC :
-			pbScript	= &(pbHvData[dIndex]);
-			dScriptSize	= (unsigned int)sdChunkSize;
-			break;
+		switch (dChunkID) {
+			case AVMALIB_CHUNKCODE_MHVS:
+				pbSetup		= &(pbHvData[dIndex]);
+				dSetupSize	= (unsigned int)sdChunkSize;
+				break;
+			case AVMALIB_CHUNKCODE_HVP:
+				if (dChunkNo != 0)		break;
+				pbVoice		= &(pbHvData[dIndex - AV_MMF_CHUNK_HEADER_SIZE]);
+				dVoiceSize	= (unsigned int)(sdChunkSize + AV_MMF_CHUNK_HEADER_SIZE);
+				break;
+			case AVMALIB_CHUNKCODE_MHSC:
+				pbScript	= &(pbHvData[dIndex]);
+				dScriptSize	= (unsigned int)sdChunkSize;
+				break;
+			default:
+				break;
 		}
 		dIndex	+= sdChunkSize;
 	}
 
 	dIndex	= 0;
-	while (dSetupSize >= dIndex + 4 )
-	{
-		wTag	= (unsigned short)(((unsigned short)(pbSetup[dIndex    ]) << 8) + pbSetup[dIndex + 1]);
+	while (dSetupSize >= dIndex + 4) {
+		wTag	= (unsigned short)(((unsigned short)(pbSetup[dIndex]) << 8) + pbSetup[dIndex + 1]);
 		wSize	= (unsigned short)(((unsigned short)(pbSetup[dIndex + 2]) << 8) + pbSetup[dIndex + 3]);
 		dIndex += 4;
 		if (dSetupSize < (dIndex + wSize))			return ;
@@ -2529,14 +2393,13 @@ _mmf_GetHvData(PLOADINFO psLoad, unsigned char bCType)
  *			unsigned char			success(read data)
  ********************************************************************************/
 static unsigned short
-_mmf_MalibMakeCRC(unsigned int dSize, unsigned char* pbData)
+_mmf_MalibMakeCRC(unsigned int dSize, unsigned char *pbData)
 {
 	unsigned short			wRes;
 	unsigned char			bData;
 
 	wRes  = 0xFFFFU;
-	while ( --dSize >= 2 )
-	{
+	while (--dSize >= 2) {
 		bData = *pbData++;
 		wRes = (unsigned short)((wRes << 8) ^ g_crc_tbl[(unsigned char)(wRes >> 8) ^ bData]);
 	}
@@ -2558,12 +2421,12 @@ _mmf_MalibMakeCRC(unsigned int dSize, unsigned char* pbData)
  *			< 0				error code
  ********************************************************************************/
 static int
-_mmf_MALoad(	unsigned char* pbFile, unsigned int dFSize)
+_mmf_MALoad(unsigned char *pbFile, unsigned int dFSize)
 {
 	PLOADINFO		psLoad_Info;
 	unsigned int		bNo = 0;
 	unsigned int		dChunkID = 0, dChunkNo = 0;
-	unsigned char*	pbBuf = NULL;
+	unsigned char	*pbBuf = NULL;
 	unsigned int		dSize = 0, dIndex = 0;
 	int				sdChunkSize = 0, sdResult = 0;
 	unsigned int		dCalcCrc = 0, dFileCrc = 0;
@@ -2572,13 +2435,12 @@ _mmf_MALoad(	unsigned char* pbFile, unsigned int dFSize)
 	pbBuf = pbFile;
 	dSize = dFSize;
 	psLoad_Info = &(g_sSmaf_Info.sLoad_Info[bNo]);
-	_mmf_CheckInitial( psLoad_Info );
+	_mmf_CheckInitial(psLoad_Info);
 
-/* check File Chunk(ID/Size)	*/
+	/* check File Chunk(ID/Size)	*/
 	sdChunkSize = _mmf_MalibNextChunk(pbBuf, dSize, AVMALIB_CHUNK_PHASE_MMMD,
-		&dChunkID, &dChunkNo);
-	if ((sdChunkSize < 0) || (dChunkID != AVMALIB_CHUNKCODE_MMMD))
-	{
+	                                  &dChunkID, &dChunkNo);
+	if ((sdChunkSize < 0) || (dChunkID != AVMALIB_CHUNKCODE_MMMD)) {
 		return AV_MMF_ERR_FILE;
 	}
 	dSize		= (unsigned int)(sdChunkSize + AV_MMF_CHUNK_HEADER_SIZE);
@@ -2591,72 +2453,62 @@ _mmf_MALoad(	unsigned char* pbFile, unsigned int dFSize)
 	}
 
 
-/* check Contents Info Chunk				*/
+	/* check Contents Info Chunk				*/
 	dIndex = AV_MMF_CHUNK_HEADER_SIZE;
-    sdChunkSize = _mmf_MalibNextChunk(&pbBuf[dIndex], (dSize-dIndex),
-		AVMALIB_CHUNK_PHASE_CNTI, &dChunkID, &dChunkNo);
-	if ((sdChunkSize < 5) || (dChunkID != AVMALIB_CHUNKCODE_CNTI))
-	{
+	sdChunkSize = _mmf_MalibNextChunk(&pbBuf[dIndex], (dSize - dIndex),
+	                                  AVMALIB_CHUNK_PHASE_CNTI, &dChunkID, &dChunkNo);
+	if ((sdChunkSize < 5) || (dChunkID != AVMALIB_CHUNKCODE_CNTI)) {
 		return AV_MMF_ERR_FILE;
 	}
 
-/* check Contents Class		*/
+	/* check Contents Class		*/
 	if ((pbBuf[AV_MMF_POSITION_OF_CCLASS] != AV_MMF_CONTENTS_CLASS_0) &&
-		(pbBuf[AV_MMF_POSITION_OF_CCLASS] != AV_MMF_CONTENTS_CLASS_1) &&
-		(pbBuf[AV_MMF_POSITION_OF_CCLASS] != AV_MMF_CONTENTS_CLASS_2) )
-	{
+	    (pbBuf[AV_MMF_POSITION_OF_CCLASS] != AV_MMF_CONTENTS_CLASS_1) &&
+	    (pbBuf[AV_MMF_POSITION_OF_CCLASS] != AV_MMF_CONTENTS_CLASS_2)) {
 		return AV_MMF_ERR_CLASS;
 	}
 
-/* check Contents Type		*/
+	/* check Contents Type		*/
 	dIndex += AV_MMF_CHUNK_HEADER_SIZE;
 	if (((pbBuf[AV_MMF_POSITION_OF_CTYPE] & 0xF0) == AV_MMF_CONTENTS_TYPE_0) ||
-	 ((pbBuf[AV_MMF_POSITION_OF_CTYPE] & 0xF0) == AV_MMF_CONTENTS_TYPE_1) ||
-	 ((pbBuf[AV_MMF_POSITION_OF_CTYPE] & 0xF0) == AV_MMF_CONTENTS_TYPE_2) )
-	{
+	    ((pbBuf[AV_MMF_POSITION_OF_CTYPE] & 0xF0) == AV_MMF_CONTENTS_TYPE_1) ||
+	    ((pbBuf[AV_MMF_POSITION_OF_CTYPE] & 0xF0) == AV_MMF_CONTENTS_TYPE_2)) {
 		psLoad_Info->dSmafType = AV_MMF_SMAF_TYPE_MA2;
-	}
-	else if (((pbBuf[AV_MMF_POSITION_OF_CTYPE] & 0xF0) == AV_MMF_CONTENTS_TYPE_3) ||
-		 ((pbBuf[AV_MMF_POSITION_OF_CTYPE] & 0xF0) == AV_MMF_CONTENTS_TYPE_4) ||
-		 ((pbBuf[AV_MMF_POSITION_OF_CTYPE] & 0xF0) == AV_MMF_CONTENTS_TYPE_5) )
-	{
-		switch (pbBuf[AV_MMF_POSITION_OF_CTYPE] & 0x0F)
-		{
-		case 0x00 :
-		case 0x01 :
-			psLoad_Info->dSmafType = AV_MMF_SMAF_TYPE_MA2;
-			break;
-		case 0x02 :
-		case 0x03 :
-			psLoad_Info->dSmafType = AV_MMF_SMAF_TYPE_MA3;
-			break;
-		case 0x04 :
-		case 0x05 :
-		case 0x06 :
-		case 0x07 :
-		case 0x08 :
-			psLoad_Info->dSmafType = AV_MMF_SMAF_TYPE_MA5;
-			break;
-		default :
-			return AV_MMF_ERR_TYPE;
+	} else if (((pbBuf[AV_MMF_POSITION_OF_CTYPE] & 0xF0) == AV_MMF_CONTENTS_TYPE_3) ||
+	           ((pbBuf[AV_MMF_POSITION_OF_CTYPE] & 0xF0) == AV_MMF_CONTENTS_TYPE_4) ||
+	           ((pbBuf[AV_MMF_POSITION_OF_CTYPE] & 0xF0) == AV_MMF_CONTENTS_TYPE_5)) {
+		switch (pbBuf[AV_MMF_POSITION_OF_CTYPE] & 0x0F) {
+			case 0x00:
+			case 0x01:
+				psLoad_Info->dSmafType = AV_MMF_SMAF_TYPE_MA2;
+				break;
+			case 0x02:
+			case 0x03:
+				psLoad_Info->dSmafType = AV_MMF_SMAF_TYPE_MA3;
+				break;
+			case 0x04:
+			case 0x05:
+			case 0x06:
+			case 0x07:
+			case 0x08:
+				psLoad_Info->dSmafType = AV_MMF_SMAF_TYPE_MA5;
+				break;
+			default:
+				return AV_MMF_ERR_TYPE;
 		}
-	}
-	else
-	{
+	} else {
 		return AV_MMF_ERR_TYPE;
 	}
 
-/* get pointer & size of option information	*/
+	/* get pointer & size of option information	*/
 	psLoad_Info->sOption_Info.pbCnti	= &pbBuf[dIndex];
 	psLoad_Info->sOption_Info.dCntiSize	= (unsigned int)(sdChunkSize);
 	dIndex += sdChunkSize;
 
-	if (pbBuf[AV_MMF_POSITION_OF_CTYPE] >= 0x30)
-	{
-		sdChunkSize = _mmf_MalibNextChunk(&pbBuf[dIndex], (dSize-dIndex),
-			AVMALIB_CHUNK_PHASE_MMMDSUB, &dChunkID, &dChunkNo);
-		if ((sdChunkSize >= 12) && (dChunkID == AVMALIB_CHUNKCODE_OPDA))
-		{
+	if (pbBuf[AV_MMF_POSITION_OF_CTYPE] >= 0x30) {
+		sdChunkSize = _mmf_MalibNextChunk(&pbBuf[dIndex], (dSize - dIndex),
+		                                  AVMALIB_CHUNK_PHASE_MMMDSUB, &dChunkID, &dChunkNo);
+		if ((sdChunkSize >= 12) && (dChunkID == AVMALIB_CHUNKCODE_OPDA)) {
 			dIndex += AV_MMF_CHUNK_HEADER_SIZE;
 			psLoad_Info->sOption_Info.pbOpda		= &pbBuf[dIndex];
 			psLoad_Info->sOption_Info.dOpdaSize	= (unsigned int)sdChunkSize;
@@ -2664,75 +2516,67 @@ _mmf_MALoad(	unsigned char* pbFile, unsigned int dFSize)
 		}
 	}
 
-/* get Track Chunk information	*/
-	while (dSize > (dIndex + AV_MMF_CHUNK_HEADER_SIZE + AV_MMF_FILE_CRC_SIZE))
-	{
-		sdChunkSize = _mmf_MalibNextChunk(&pbBuf[dIndex], (dSize-dIndex),
-			AVMALIB_CHUNK_PHASE_MMMDSUB, &dChunkID, &dChunkNo);
-		if (sdChunkSize < 0)
-		{
-			if (sdChunkSize == AVMALIB_CHUNK_ID_ERROR)
-			{
+	/* get Track Chunk information	*/
+	while (dSize > (dIndex + AV_MMF_CHUNK_HEADER_SIZE + AV_MMF_FILE_CRC_SIZE)) {
+		sdChunkSize = _mmf_MalibNextChunk(&pbBuf[dIndex], (dSize - dIndex),
+		                                  AVMALIB_CHUNK_PHASE_MMMDSUB, &dChunkID, &dChunkNo);
+		if (sdChunkSize < 0) {
+			if (sdChunkSize == AVMALIB_CHUNK_ID_ERROR) {
 				return AV_MMF_ERR_FILE;
-			}
-			else {
+			} else {
 				return AV_MMF_ERR_SIZE;
 			}
 		}
 		dIndex += AV_MMF_CHUNK_HEADER_SIZE;
-		switch (dChunkID)
-		{
-		case AVMALIB_CHUNKCODE_MTR :
-			if (dChunkNo > 6)
+		switch (dChunkID) {
+			case AVMALIB_CHUNKCODE_MTR:
+				if (dChunkNo > 6)
+					break;
+				psLoad_Info->sTrack_Info[dChunkNo].pbMtr	= &(pbBuf[dIndex]);
+				psLoad_Info->sTrack_Info[dChunkNo].dMtrSize	= (unsigned int)sdChunkSize;
 				break;
-			psLoad_Info->sTrack_Info[dChunkNo].pbMtr	= &(pbBuf[dIndex]);
-			psLoad_Info->sTrack_Info[dChunkNo].dMtrSize	= (unsigned int)sdChunkSize;
-			break;
-		case AVMALIB_CHUNKCODE_ATR :
-			if (dChunkNo != 0)
+			case AVMALIB_CHUNKCODE_ATR:
+				if (dChunkNo != 0)
+					break;
+				psLoad_Info->sTrack_Info[AV_MMF_ATR_TRACK_NO].pbMtr	= &(pbBuf[dIndex]);
+				psLoad_Info->sTrack_Info[AV_MMF_ATR_TRACK_NO].dMtrSize	= (unsigned int)sdChunkSize;
 				break;
-			psLoad_Info->sTrack_Info[AV_MMF_ATR_TRACK_NO].pbMtr	= &(pbBuf[dIndex]);
-			psLoad_Info->sTrack_Info[AV_MMF_ATR_TRACK_NO].dMtrSize	= (unsigned int)sdChunkSize;
-			break;
-		default :
-			break;
+			default:
+				break;
 		}
 		dIndex += sdChunkSize;
 	}
 
 
 
-/* Error Check of Track Chunk	*/
-	switch (psLoad_Info->dSmafType)
-	{
-	case AV_MMF_SMAF_TYPE_MA2 :
-		sdResult = _mmf_TrackChunkCheck2(psLoad_Info);
-		break;
-	case AV_MMF_SMAF_TYPE_MA3 :
-		sdResult = _mmf_TrackChunkCheck3(psLoad_Info);
-		break;
-	default :
-		if (_mmf_CheckM5P(psLoad_Info)!= AV_MMF_FUNC_SUCCESS)	return AV_MMF_ERR_CHUNK;
-		sdResult = _mmf_TrackChunkCheck5(psLoad_Info);
-		break;
+	/* Error Check of Track Chunk	*/
+	switch (psLoad_Info->dSmafType) {
+		case AV_MMF_SMAF_TYPE_MA2:
+			sdResult = _mmf_TrackChunkCheck2(psLoad_Info);
+			break;
+		case AV_MMF_SMAF_TYPE_MA3:
+			sdResult = _mmf_TrackChunkCheck3(psLoad_Info);
+			break;
+		default:
+			if (_mmf_CheckM5P(psLoad_Info) != AV_MMF_FUNC_SUCCESS)	return AV_MMF_ERR_CHUNK;
+			sdResult = _mmf_TrackChunkCheck5(psLoad_Info);
+			break;
 	}
 
-/* check playback time			*/
+	/* check playback time			*/
 	if (sdResult != AV_MMF_FUNC_SUCCESS)		return sdResult;
 
-	#ifdef __MMFILE_TEST_MODE__
-	debug_msg ( "SUM %ld\n", psLoad_Info->dPlayTime * psLoad_Info->dTimeBase);
-	#endif
+#ifdef __MMFILE_TEST_MODE__
+	debug_msg("SUM %ld\n", psLoad_Info->dPlayTime * psLoad_Info->dTimeBase);
+#endif
 
-	if ((psLoad_Info->dPlayTime * psLoad_Info->dTimeBase) <= AV_MMF_PLAY_TIME_MIN)
-	{
+	if ((psLoad_Info->dPlayTime * psLoad_Info->dTimeBase) <= AV_MMF_PLAY_TIME_MIN) {
 		return AV_MMF_ERR_SLENGTH;
 	}
-	if ((psLoad_Info->dPlayTime * psLoad_Info->dTimeBase) >= AV_MMF_PLAY_TIME_MAX)
-	{
+	if ((psLoad_Info->dPlayTime * psLoad_Info->dTimeBase) >= AV_MMF_PLAY_TIME_MAX) {
 		return AV_MMF_ERR_LLENGTH;
 	}
-	rVal = psLoad_Info->dPlayTime*psLoad_Info->dTimeBase;
+	rVal = psLoad_Info->dPlayTime * psLoad_Info->dTimeBase;
 	_mmf_GetHvData(psLoad_Info, pbBuf[AV_MMF_POSITION_OF_CTYPE]);
 
 	psLoad_Info->pbMmmd		= pbBuf;
@@ -2754,7 +2598,7 @@ _mmf_MALoad(	unsigned char* pbFile, unsigned int dFSize)
  *			< 0				error code
  ********************************************************************************/
 static int
-_mmf_RenewalProfile(unsigned char* pbFile)
+_mmf_RenewalProfile(unsigned char *pbFile)
 {
 	PLOADINFO			psLoad;
 	POPTIONINFO			psOptn;
@@ -2766,7 +2610,7 @@ _mmf_RenewalProfile(unsigned char* pbFile)
 	psTrk	= &(psLoad->sTrack_Info[5]);
 	psHuf	= &(psLoad->sHuffman_Info);
 
-/* renew pointer  offset to pointer			*/
+	/* renew pointer  offset to pointer			*/
 	psLoad->pbMmmd		= pbFile;
 	psLoad->dCrc		= AV_MMF_CRC_NULL;
 
@@ -2779,15 +2623,13 @@ _mmf_RenewalProfile(unsigned char* pbFile)
 	psTrk->pbMtsq	= &(pbFile[(unsigned int)psTrk->pbMtsq]);
 	psTrk->pbMtsp	= &(pbFile[(unsigned int)psTrk->pbMtsp]);
 
-/* Initialize Huffman information structure	*/
+	/* Initialize Huffman information structure	*/
 	psHuf->psBuffer		= psTrk->pbMtsq;
 	psHuf->dMtsqSize	= psTrk->dMtsqSize;
 
-	if (psTrk->pbMtr[0] == 0x01)
-	{
+	if (psTrk->pbMtr[0] == 0x01) {
 		psHuf->dSeqSize = _mmf_DecodeInit(psHuf);
-		if (psHuf->dSeqSize == AV_MMF_HUFFMAN_TREE_FAILURE)
-		{
+		if (psHuf->dSeqSize == AV_MMF_HUFFMAN_TREE_FAILURE) {
 			return AV_MMF_FUNC_ERROR;
 		}
 	}
@@ -2804,61 +2646,52 @@ _mmf_RenewalProfile(unsigned char* pbFile)
 
 
 static int
-_mmf_ParseSkipXmf2Mmf(unsigned char* pbFile, unsigned int dFSize)
+_mmf_ParseSkipXmf2Mmf(unsigned char *pbFile, unsigned int dFSize)
 {
-	unsigned int skipVal = 0, sizeOfpbFile= dFSize;
+	unsigned int skipVal = 0, sizeOfpbFile = dFSize;
 	char cmpXmfCMMD[5];
 	if (pbFile)
 		memcpy(cmpXmfCMMD, pbFile, 4);
-	else
-	{
-		debug_error ( "NULL pointer!\n");
+	else {
+		debug_error("NULL pointer!\n");
 		return -1;
 	}
 
 	cmpXmfCMMD[4] = 0;
 
-	if (strncmp(cmpXmfCMMD, "CMMD", 4) == 0)
-	{
-		while (1)
-		{
-			if (pbFile[skipVal] == 'M' && pbFile[skipVal+1] == 'M' && pbFile[skipVal+2] == 'M' && pbFile[skipVal+3] == 'D')
-			{
-				#ifdef __MMFILE_TEST_MODE__
-				debug_msg ( "MMMD Header found!\n");
-				#endif
+	if (strncmp(cmpXmfCMMD, "CMMD", 4) == 0) {
+		while (1) {
+			if (pbFile[skipVal] == 'M' && pbFile[skipVal + 1] == 'M' && pbFile[skipVal + 2] == 'M' && pbFile[skipVal + 3] == 'D') {
+#ifdef __MMFILE_TEST_MODE__
+				debug_msg("MMMD Header found!\n");
+#endif
 				break;
-			}
-			else
-			{
+			} else {
 				skipVal++;
-				if (skipVal >= sizeOfpbFile)
-				{
-					#ifdef __MMFILE_TEST_MODE__
-					debug_msg ( "MMMD Header is not found!\n");
-					#endif
+				if (skipVal >= sizeOfpbFile) {
+#ifdef __MMFILE_TEST_MODE__
+					debug_msg("MMMD Header is not found!\n");
+#endif
 					return -1;
 				}
 			}
 
 		}
-	}
-	else
-	{
-		#ifdef __MMFILE_TEST_MODE__
-		debug_msg ( "File header is not started CMMD\n");
-		#endif
+	} else {
+#ifdef __MMFILE_TEST_MODE__
+		debug_msg("File header is not started CMMD\n");
+#endif
 	}
 
-	#ifdef __MMFILE_TEST_MODE__
-	debug_msg ( "skip value: %d\n", skipVal);
-	#endif
+#ifdef __MMFILE_TEST_MODE__
+	debug_msg("skip value: %d\n", skipVal);
+#endif
 
 	return skipVal;
 }
 
 static int
-mmf_file_mmf_get_duration (char *src, int is_xmf)
+mmf_file_mmf_get_duration(char *src, int is_xmf)
 {
 	int				readed = 0;
 	int				xmf_skip_offset = 0;
@@ -2879,30 +2712,29 @@ mmf_file_mmf_get_duration (char *src, int is_xmf)
 #endif
 
 	/*open*/
-	ret = mmfile_open (&fp, src, MMFILE_RDONLY);
-	if (ret == MMFILE_UTIL_FAIL) 
-     {
-		debug_error ( "open failed.\n");
+	ret = mmfile_open(&fp, src, MMFILE_RDONLY);
+	if (ret == MMFILE_UTIL_FAIL) {
+		debug_error("open failed.\n");
 		return -1;
 	}
 
 	/*get file size*/
-	mmfile_seek (fp, 0L, MMFILE_SEEK_END);
-	src_size = mmfile_tell (fp);
-	mmfile_seek (fp, 0L, MMFILE_SEEK_SET);
+	mmfile_seek(fp, 0L, MMFILE_SEEK_END);
+	src_size = mmfile_tell(fp);
+	mmfile_seek(fp, 0L, MMFILE_SEEK_SET);
 
 	if (src_size <= 0) {
-		debug_error ( "failed to get file size.\n");
+		debug_error("failed to get file size.\n");
 		ret_msec = -1;
 		goto _RELEASE_RESOURCE;
 	}
 
 	/*alloc work buffer*/
-	buf = mmfile_malloc (src_size + 1);
+	buf = mmfile_malloc(src_size + 1);
 
 	/*read data*/
-	if ((readed = mmfile_read (fp, buf, src_size) ) <= 0 ) {
-		debug_error ( "read error. size = %d\n", readed);
+	if ((readed = mmfile_read(fp, buf, src_size)) <= 0) {
+		debug_error("read error. size = %d\n", readed);
 
 		ret_msec = -1;
 		goto _RELEASE_RESOURCE;
@@ -2910,7 +2742,7 @@ mmf_file_mmf_get_duration (char *src, int is_xmf)
 
 	/*if XMF, get skip offset.*/
 	if (is_xmf) {
-		xmf_skip_offset = _mmf_ParseSkipXmf2Mmf (buf, src_size);
+		xmf_skip_offset = _mmf_ParseSkipXmf2Mmf(buf, src_size);
 		if (xmf_skip_offset == -1) {
 			ret_msec = -1;
 			goto _RELEASE_RESOURCE;
@@ -2920,14 +2752,14 @@ mmf_file_mmf_get_duration (char *src, int is_xmf)
 	if (g_sSmaf_Info.dStatus == AV_MMF_STATUS_SAT_PROFILE) {
 		load_info = &(g_sSmaf_Info.sLoad_Info[1]);
 		if (load_info->dMmmdSize <= src_size) {
-			p_crc	= &(buf[load_info->dMmmdSize -2+xmf_skip_offset]);
+			p_crc	= &(buf[load_info->dMmmdSize - 2 + xmf_skip_offset]);
 			dCrc	= (unsigned int)((((unsigned int)p_crc[0]) << 8) + (unsigned int)p_crc[1]);
 		} else {
 			dCrc	= AV_MMF_CRC_NULL;
 		}
 
 		if (dCrc == load_info->dCrc) {
-			if (_mmf_RenewalProfile (buf + xmf_skip_offset) == AV_MMF_FUNC_SUCCESS) {
+			if (_mmf_RenewalProfile(buf + xmf_skip_offset) == AV_MMF_FUNC_SUCCESS) {
 				g_sSmaf_Info.dStatus = AV_MMF_STATUS_LOADED;
 				ret_msec = -1;
 				goto _RELEASE_RESOURCE;
@@ -2935,13 +2767,13 @@ mmf_file_mmf_get_duration (char *src, int is_xmf)
 		}
 	}
 
-	ret_msec = _mmf_MALoad (buf + xmf_skip_offset, src_size);
+	ret_msec = _mmf_MALoad(buf + xmf_skip_offset, src_size);
 
 _RELEASE_RESOURCE:
 
-	mmfile_close (fp);
+	mmfile_close(fp);
 
-	if (buf) mmfile_free (buf);
+	if (buf) mmfile_free(buf);
 
 	return ret_msec;
 }

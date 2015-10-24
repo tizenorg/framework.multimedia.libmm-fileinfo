@@ -20,91 +20,91 @@
  */
 
 #include <glib.h>
-#include <mm_debug.h>
+#include "mm_file_debug.h"
 #include "mm_file_utils.h"
 
-EXPORT_API 
-MMFileList mmfile_list_alloc ()
+EXPORT_API
+MMFileList mmfile_list_alloc()
 {
-    return g_list_alloc ();
+	return g_list_alloc();
 }
 
 EXPORT_API
-MMFileList mmfile_list_append (MMFileList list, void* data)
+MMFileList mmfile_list_append(MMFileList list, void *data)
 {
-    return g_list_append (list, data);
+	return g_list_append(list, data);
 }
 
 EXPORT_API
-MMFileList mmfile_list_prepend (MMFileList list, void* data)
+MMFileList mmfile_list_prepend(MMFileList list, void *data)
 {
-    return g_list_prepend (list, data);
+	return g_list_prepend(list, data);
 }
 
 EXPORT_API
-MMFileList mmfile_list_find (MMFileList list, void* data)
+MMFileList mmfile_list_find(MMFileList list, void *data)
 {
-    return g_list_find (list, data);
+	return g_list_find(list, data);
 }
 
 EXPORT_API
-MMFileList mmfile_list_first (MMFileList list)
+MMFileList mmfile_list_first(MMFileList list)
 {
-    return g_list_first (list);
+	return g_list_first(list);
 }
 
 EXPORT_API
-MMFileList mmfile_list_last (MMFileList list)
+MMFileList mmfile_list_last(MMFileList list)
 {
-    return g_list_last (list);
+	return g_list_last(list);
 }
 
 EXPORT_API
-MMFileList mmfile_list_nth (MMFileList list, unsigned int n)
+MMFileList mmfile_list_nth(MMFileList list, unsigned int n)
 {
-    return g_list_nth (list, n);
+	return g_list_nth(list, n);
 }
 
 EXPORT_API
-MMFileList mmfile_list_next (MMFileList list)
+MMFileList mmfile_list_next(MMFileList list)
 {
-    return g_list_next (list);
+	return g_list_next(list);
 }
 
 EXPORT_API
-MMFileList mmfile_list_previous (MMFileList list)
+MMFileList mmfile_list_previous(MMFileList list)
 {
-    return g_list_previous (list);    
+	return g_list_previous(list);
 }
 
 EXPORT_API
-unsigned int mmfile_list_length (MMFileList list)
+unsigned int mmfile_list_length(MMFileList list)
 {
-    return g_list_length (list);
+	return g_list_length(list);
 }
 
 EXPORT_API
-MMFileList mmfile_list_remove (MMFileList list, void *data)
+MMFileList mmfile_list_remove(MMFileList list, void *data)
 {
-    return g_list_remove (list, data);
+	return g_list_remove(list, data);
 }
 
 EXPORT_API
-MMFileList mmfile_list_remove_all (MMFileList list, void *data)
+MMFileList mmfile_list_remove_all(MMFileList list, void *data)
 {
-    return g_list_remove_all (list, data);
+	return g_list_remove_all(list, data);
 }
 
 
 EXPORT_API
-MMFileList mmfile_list_reverse (MMFileList list)
+MMFileList mmfile_list_reverse(MMFileList list)
 {
-    return g_list_reverse (list);
+	return g_list_reverse(list);
 }
 
 EXPORT_API
-void mmfile_list_free (MMFileList list)
+void mmfile_list_free(MMFileList list)
 {
-    g_list_free (list);
+	g_list_free(list);
 }
 

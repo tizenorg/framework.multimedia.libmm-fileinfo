@@ -30,5 +30,5 @@ libmmfile_utils_la_LIBADD = $(MMCOMMON_LIBS) \
 			    $(ICU_LIBS) \
 			    $(VCONF_LIBS)
 
-libmmfile_utils_la_CFLAGS += $(MMLOG_CFLAGS) -DMMF_LOG_OWNER=0x040 -DMMF_DEBUG_PREFIX=\"MMF-FILE-UTILS\"
-libmmfile_utils_la_LIBADD += $(MMLOG_LIBS)
+libmmfile_utils_la_CFLAGS += $(DLOG_CFLAGS)
+libmmfile_utils_la_LIBADD += $(DLOG_LIBS)

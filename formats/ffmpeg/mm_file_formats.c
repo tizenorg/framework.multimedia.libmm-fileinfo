@@ -22,14 +22,55 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
-#include "mm_debug.h"
+#include "mm_file_debug.h"
 #include "mm_file_format_private.h"
 #include "mm_file_utils.h"
 
 #define _MMF_FILE_FILEEXT_MAX 128
 
-int (*MMFileOpenFunc[MM_FILE_FORMAT_NUM+1]) (MMFileFormatContext *fileContext) = {
+#define MMFILE_EXT_MP4		0x6D7034
+#define MMFILE_EXT_MPEG4	0x6D70656734
+#define MMFILE_EXT_M4A		0x6D3461
+#define MMFILE_EXT_MPG		0x6D7067
+#define MMFILE_EXT_MPG4		0x6D706734
+#define MMFILE_EXT_M4V		0x6D3476
+#define MMFILE_EXT_3GP		0x336770
+#define MMFILE_EXT_AMR		0x616D72
+#define MMFILE_EXT_AWB		0x617762
+#define MMFILE_EXT_WAV		0x776176
+#define MMFILE_EXT_MID		0x6D6964
+#define MMFILE_EXT_MIDI		0x6D696D69
+#define MMFILE_EXT_SPM		0x73706D
+#define MMFILE_EXT_MP3		0x6D7033
+#define MMFILE_EXT_AAC		0x616163
+#define MMFILE_EXT_XMF		0x786D66
+#define MMFILE_EXT_MXMF		0x6D786D66
+#define MMFILE_EXT_MMF		0x6D6D66
+#define MMFILE_EXT_MA2		0x6D6132
+#define MMFILE_EXT_IMY		0x696D79
+#define MMFILE_EXT_AVI		0x617669
+#define MMFILE_EXT_DIVX		0x64697678
+#define MMFILE_EXT_ASF		0x617366
+#define MMFILE_EXT_ASX		0x617378
+#define MMFILE_EXT_WMA		0x776D61
+#define MMFILE_EXT_WMV		0x776D76
+#define MMFILE_EXT_OGG		0x6F6767
+#define MMFILE_EXT_MKV		0x6D6B76
+#define MMFILE_EXT_MKA		0x6D6B61
+#define MMFILE_EXT_MOV		0x6D6F76
+#define MMFILE_EXT_FLAC		0x666C6163
+#define MMFILE_EXT_FLV		0x666C76
+#define MMFILE_EXT_AIF		0x616966
+#define MMFILE_EXT_AIFF		0x61696666
+#define MMFILE_EXT_RMVB		0x726D7662
+#define MMFILE_EXT_RM		0x726D
+#define MMFILE_EXT_M2TS		0x6D327473
+#define MMFILE_EXT_MTS		0x6D7473
+#define MMFILE_EXT_TS		0x7473
+#define MMFILE_EXT_TP		0x7470
+#define MMFILE_EXT_MPEG		0x6D706567
+
+int (*MMFileOpenFunc[MM_FILE_FORMAT_NUM + 1])(MMFileFormatContext *fileContext) = {
 	mmfile_format_open_ffmpg,	/* 3GP */
 	mmfile_format_open_ffmpg,	/* ASF */
 	mmfile_format_open_ffmpg,	/* AVI */
@@ -37,12 +78,12 @@ int (*MMFileOpenFunc[MM_FILE_FORMAT_NUM+1]) (MMFileFormatContext *fileContext) =
 	mmfile_format_open_ffmpg,	/* MP4 */
 	mmfile_format_open_ffmpg,	/* OGG */
 	NULL,						/* NUT */
-	mmfile_format_open_ffmpg,						/* QT */
-	NULL,						/* REAL */
+	mmfile_format_open_ffmpg,	/* QT */
+	mmfile_format_open_ffmpg,	/* REAL */
 	mmfile_format_open_amr,		/* AMR */
 	mmfile_format_open_aac,		/* AAC */
 	mmfile_format_open_mp3,		/* MP3 */
-	NULL,						/* AIFF */
+	mmfile_format_open_ffmpg,	/* AIFF */
 	NULL,						/* AU */
 	mmfile_format_open_wav,		/* WAV */
 	mmfile_format_open_mid,		/* MID */
@@ -55,10 +96,14 @@ int (*MMFileOpenFunc[MM_FILE_FORMAT_NUM+1]) (MMFileFormatContext *fileContext) =
 	mmfile_format_open_ffmpg,	/* WMV */
 	NULL,						/* JPG */
 	mmfile_format_open_ffmpg,	/* FLAC */
+	mmfile_format_open_ffmpg,	/* MPEG-TS */
+	mmfile_format_open_ffmpg,	/* MPEG-PS */
+	mmfile_format_open_ffmpg,	/* MPEG 1 VIDEO*/
+	mmfile_format_open_ffmpg,	/* MPEG 1 AUDIO */
 	NULL,
 };
 
-static int _CleanupFrameContext (MMFileFormatContext *formatContext, bool clean_all)
+static int _CleanupFrameContext(MMFileFormatContext *formatContext, bool clean_all)
 {
 	if (formatContext) {
 
@@ -89,7 +134,7 @@ static int _CleanupFrameContext (MMFileFormatContext *formatContext, bool clean_
 		if (formatContext->unsyncLyrics)		mmfile_free(formatContext->unsyncLyrics);
 		if (formatContext->rotate)				mmfile_free(formatContext->rotate);
 
-		if(clean_all)	//syncLyrics has to be freed in mm_file_destroy_tag_attrs() except abnormal status
+		if (clean_all)	/*syncLyrics has to be freed in mm_file_destroy_tag_attrs() except abnormal status */
 			if (formatContext->syncLyrics)			mm_file_free_synclyrics_list(formatContext->syncLyrics);
 
 		if (formatContext->privateFormatData)	mmfile_free(formatContext->privateFormatData);
@@ -109,12 +154,12 @@ static int _CleanupFrameContext (MMFileFormatContext *formatContext, bool clean_
 
 		if (formatContext->thumbNail) {
 			if (formatContext->thumbNail->frameData)
-				mmfile_free (formatContext->thumbNail->frameData);
+				mmfile_free(formatContext->thumbNail->frameData);
 
 			if (formatContext->thumbNail->configData)
-				mmfile_free (formatContext->thumbNail->configData);
+				mmfile_free(formatContext->thumbNail->configData);
 
-			mmfile_free (formatContext->thumbNail);
+			mmfile_free(formatContext->thumbNail);
 		}
 
 		formatContext->videoTotalTrackNum = 0;
@@ -126,19 +171,45 @@ static int _CleanupFrameContext (MMFileFormatContext *formatContext, bool clean_
 }
 
 static int
-_PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum, int *isdrm)
+_PreprocessFile(MMFileSourceType *fileSrc, char **urifilename, int *formatEnum)
 {
 	const char	*fileName = NULL;
-	char		extansion_name[_MMF_FILE_FILEEXT_MAX];
-	int			pos = 0;
 	int			filename_len = 0;
 	int			index = 0, skip_index = 0;
+	int ret = 0;
+	MMFileIOHandle *fp = NULL;
 
 	if (fileSrc->type == MM_FILE_SRC_TYPE_FILE) {
-		fileName = (const char *)(fileSrc->file.path);
-		filename_len = strlen (fileName);
-		pos = filename_len;
+		unsigned long long file_extansion = 0;
 
+		fileName = (const char *)(fileSrc->file.path);
+		filename_len = strlen(fileName);
+
+		int pos = filename_len;
+#ifdef __MMFILE_MMAP_MODE__
+		*urifilename = mmfile_malloc(MMFILE_MMAP_URI_LEN + filename_len + 1);
+		if (!*urifilename) {
+			debug_error("error: mmfile_malloc uriname\n");
+			goto FILE_FORMAT_FAIL;
+		}
+
+		memset(*urifilename, 0x00, MMFILE_MMAP_URI_LEN + filename_len + 1);
+		strncpy(*urifilename, MMFILE_MMAP_URI, MMFILE_MMAP_URI_LEN);
+		strncat(*urifilename, fileName, filename_len);
+		(*urifilename)[MMFILE_MMAP_URI_LEN + filename_len] = '\0';
+
+#else
+		*urifilename = mmfile_malloc(MMFILE_FILE_URI_LEN + filename_len + 1);
+		if (!*urifilename) {
+			debug_error("error: mmfile_malloc uriname\n");
+			goto FILE_FORMAT_FAIL;
+		}
+
+		memset(*urifilename, 0x00, MMFILE_FILE_URI_LEN + filename_len + 1);
+		strncpy(*urifilename, MMFILE_FILE_URI, MMFILE_FILE_URI_LEN + 1);
+		strncat(*urifilename, fileName, filename_len);
+		(*urifilename)[MMFILE_FILE_URI_LEN + filename_len] = '\0';
+#endif
 		/**
 		 * Get file extension from file's name
 		 */
@@ -146,253 +217,289 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 			pos--;
 			if (fileName[pos] == '.')
 				break;
+			file_extansion |= (fileName[pos] >= 'A' && fileName[pos] <= 'Z' ? fileName[pos] + 0x20 : fileName[pos]) << (filename_len - pos - 1) * 8;
 		}
 
-		memset (extansion_name, 0x00, _MMF_FILE_FILEEXT_MAX);
+		ret = mmfile_open(&fp, *urifilename, MMFILE_RDONLY);
 
-		/*extract metadata for all file. ex)a , a. , a.mp3*/
-		if (pos == 0) {
-			/*even though there is no file extension, extracto metadata*/
-			#ifdef __MMFILE_TEST_MODE__
-			debug_msg ("no file extension");
-			#endif
-		}
-		else if (_MMF_FILE_FILEEXT_MAX > (filename_len - pos - 1)) {
-			strncpy (extansion_name, fileName + pos +1 , (filename_len - pos - 1));
-			extansion_name[filename_len - pos - 1] = '\0';
-		} else {
-			debug_error ("invalid filename. destination length: %d, source length: %d.\n", _MMF_FILE_FILEEXT_MAX, (filename_len - pos - 1));
-			return MMFILE_FORMAT_FAIL;		/*invalid file name*/
+		if (ret == MMFILE_IO_FAILED) {
+			debug_error("error: mmfile_open\n");
+			goto FILE_FORMAT_FAIL;
 		}
 
-	
-		*isdrm = MM_FILE_DRM_NONE;
-#ifdef __MMFILE_MMAP_MODE__
-		*urifilename = mmfile_malloc (MMFILE_MMAP_URI_LEN + filename_len + 1);
-		if (!*urifilename) {
-			debug_error ("error: mmfile_malloc uriname\n");
-			return MMFILE_FORMAT_FAIL;
-		}
+		/*///////////////////////////////////////////////////////////////////// */
+		/*                 Check File format                                 // */
+		/*///////////////////////////////////////////////////////////////////// */
 
-		memset (*urifilename, 0x00, MMFILE_MMAP_URI_LEN + filename_len + 1);
-		strncpy (*urifilename, MMFILE_MMAP_URI, MMFILE_MMAP_URI_LEN);
-		strncat (*urifilename, fileName, filename_len);
-		(*urifilename)[MMFILE_MMAP_URI_LEN + filename_len] = '\0';
-
-#else
-		*urifilename = mmfile_malloc (MMFILE_FILE_URI_LEN + filename_len + 1);
-		if (!*urifilename) {
-			debug_error ("error: mmfile_malloc uriname\n");
-			return MMFILE_FORMAT_FAIL;
-		}
-
-		memset (*urifilename, 0x00, MMFILE_FILE_URI_LEN + filename_len + 1);
-		strncpy (*urifilename, MMFILE_FILE_URI, MMFILE_FILE_URI_LEN+1);
-		strncat (*urifilename, fileName, filename_len);
-		(*urifilename)[MMFILE_FILE_URI_LEN + filename_len] = '\0';
+#ifdef __MMFILE_TEST_MODE__
+		/*debug_msg ("Get codec type of [%s].\n", extansion_name); */
 #endif
 
-		///////////////////////////////////////////////////////////////////////
-		//                 Check File format                                 //
-		///////////////////////////////////////////////////////////////////////
+		switch (file_extansion) {
+			case MMFILE_EXT_MP4:
+			case MMFILE_EXT_MPEG4:
+			case MMFILE_EXT_M4A:
+			case MMFILE_EXT_MPG:
+			case MMFILE_EXT_MPG4:
+			case MMFILE_EXT_M4V:
+				if (MMFileFormatIsValidMP4(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_MP4;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_MP4;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-		#ifdef __MMFILE_TEST_MODE__
-		debug_msg ("Get codec type of [%s].\n", extansion_name);
-		#endif
+			case MMFILE_EXT_3GP:
+				if (MMFileFormatIsValidMP4(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_3GP;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_3GP;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-		if (strcasecmp (extansion_name, "mp4") == 0   ||
-			strcasecmp (extansion_name, "mpeg4") == 0 ||
-			strcasecmp (extansion_name, "m4a") == 0   ||
-			strcasecmp (extansion_name, "mpg") == 0   ||
-			strcasecmp (extansion_name, "mpg4") == 0  ||
-			strcasecmp (extansion_name, "m4v") == 0 ) {
+			case MMFILE_EXT_AMR:
+			case MMFILE_EXT_AWB:
+				if (MMFileFormatIsValidAMR(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_AMR;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_AMR;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-			if (MMFileFormatIsValidMP4 (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_MP4;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_MP4;
-			goto PROBE_PROPER_FILE_TYPE;
+			case MMFILE_EXT_WAV:
+				if (MMFileFormatIsValidWAV(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_WAV;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_WAV;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-		} else if (strcasecmp (extansion_name, "3gp") == 0) {
-			if (MMFileFormatIsValidMP4 (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_3GP;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_3GP;
-			goto PROBE_PROPER_FILE_TYPE;
+			case MMFILE_EXT_MID:
+			case MMFILE_EXT_MIDI:
+			case MMFILE_EXT_SPM:
+				if (MMFileFormatIsValidMID(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_MID;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_MID;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-		} else if (strcasecmp (extansion_name, "amr") == 0 ||
-				   strcasecmp (extansion_name, "awb") == 0) {
+			case MMFILE_EXT_MP3:
+				if (MMFileFormatIsValidMP3(fp, NULL, 5)) {
+					*formatEnum = MM_FILE_FORMAT_MP3;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_MP3;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-			if (MMFileFormatIsValidAMR (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_AMR;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_AMR;
-			goto PROBE_PROPER_FILE_TYPE;
+			case MMFILE_EXT_AAC:
+				if (MMFileFormatIsValidAAC(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_AAC;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_AAC;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-		} else if (strcasecmp (extansion_name, "wav") == 0) {
-			if (MMFileFormatIsValidWAV (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_WAV;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_WAV;
-			goto PROBE_PROPER_FILE_TYPE;
+			case MMFILE_EXT_XMF:
+			case MMFILE_EXT_MXMF:
+				if (MMFileFormatIsValidMID(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_MID;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_MID;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-		} else if (strcasecmp (extansion_name, "mid")  == 0 ||
-				   strcasecmp (extansion_name, "midi") == 0 ||
-				   strcasecmp (extansion_name, "spm")  == 0 ) {
+			case MMFILE_EXT_MMF:
+			case MMFILE_EXT_MA2:
+				if (MMFileFormatIsValidMMF(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_MMF;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_MMF;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-			if (MMFileFormatIsValidMID (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_MID;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_MID;
-			goto PROBE_PROPER_FILE_TYPE;
+			case MMFILE_EXT_IMY:
+				if (MMFileFormatIsValidIMY(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_IMELODY;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_IMELODY;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-		} else if (strcasecmp (extansion_name, "mp3") == 0) {
-			if (MMFileFormatIsValidMP3 (*urifilename,5)) {
-				*formatEnum = MM_FILE_FORMAT_MP3;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_MP3;
-			goto PROBE_PROPER_FILE_TYPE;
+			case MMFILE_EXT_AVI:
+				if (MMFileFormatIsValidAVI(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_AVI;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_AVI;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-		} else if (strcasecmp (extansion_name, "aac") == 0) {
-			if (MMFileFormatIsValidAAC (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_AAC;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_AAC;
-			goto PROBE_PROPER_FILE_TYPE;
+			case MMFILE_EXT_DIVX:
+				if (MMFileFormatIsValidAVI(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_DIVX;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_DIVX;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-		} else if (strcasecmp (extansion_name, "xmf") == 0 ||
-				 strcasecmp (extansion_name, "mxmf") == 0) {
-			if (MMFileFormatIsValidMID (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_MID;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_MID;
-			goto PROBE_PROPER_FILE_TYPE;
+			case MMFILE_EXT_ASF:
+			case MMFILE_EXT_ASX:
+				if (MMFileFormatIsValidASF(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_ASF;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_ASF;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-		} else if (!strcasecmp (extansion_name, "mmf") ||
-				   !strcasecmp (extansion_name, "ma2")) {
-			if (MMFileFormatIsValidMMF (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_MMF;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_MMF;
-			goto PROBE_PROPER_FILE_TYPE;
+			case MMFILE_EXT_WMA:
+				if (MMFileFormatIsValidWMA(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_WMA;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_WMA;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-		} else if (strcasecmp (extansion_name, "imy") == 0) {
-			if (MMFileFormatIsValidIMY (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_IMELODY;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_IMELODY;
-			goto PROBE_PROPER_FILE_TYPE;
+			case MMFILE_EXT_WMV:
+				if (MMFileFormatIsValidWMV(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_WMV;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_WMV;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-		} else if (strcasecmp (extansion_name, "avi") == 0) {
-			if (MMFileFormatIsValidAVI (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_AVI;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_AVI;
-			goto PROBE_PROPER_FILE_TYPE;
-		} else if (strcasecmp (extansion_name, "divx") == 0) {
-			if (MMFileFormatIsValidAVI (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_DIVX;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_DIVX;
-			goto PROBE_PROPER_FILE_TYPE;
+			case MMFILE_EXT_OGG:
+				if (MMFileFormatIsValidOGG(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_OGG;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_OGG;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-		} else if (strcasecmp (extansion_name, "asf") == 0 ||
-				   strcasecmp (extansion_name, "asx") == 0 ) {
-			if (MMFileFormatIsValidASF (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_ASF;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_ASF;
-			goto PROBE_PROPER_FILE_TYPE;
+			case MMFILE_EXT_MKV:
+			case MMFILE_EXT_MKA:
+				if (MMFileFormatIsValidMatroska(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_MATROSKA;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_MATROSKA;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-		} else if (strcasecmp (extansion_name, "wma") == 0) {
-			if (MMFileFormatIsValidWMA (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_WMA;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_WMA;
-			goto PROBE_PROPER_FILE_TYPE;
+			case MMFILE_EXT_MOV:
+				if (MMFileFormatIsValidMP4(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_QT;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_QT;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-		} else if (strcasecmp (extansion_name, "wmv") == 0) {
-			if (MMFileFormatIsValidWMV (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_WMV;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_WMV;
-			goto PROBE_PROPER_FILE_TYPE;
+			case MMFILE_EXT_FLAC:
+				if (MMFileFormatIsValidFLAC(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_FLAC;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_FLAC;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 
-		} else if (strcasecmp (extansion_name, "ogg") == 0) {
-			if (MMFileFormatIsValidOGG (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_OGG;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_OGG;
-			goto PROBE_PROPER_FILE_TYPE;
-		} else if (strcasecmp (extansion_name, "mkv") == 0 ||
-				   strcasecmp (extansion_name, "mka") == 0) {
-			if (MMFileFormatIsValidMatroska (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_MATROSKA;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_MATROSKA;
-			goto PROBE_PROPER_FILE_TYPE;
-		} else if (strcasecmp (extansion_name, "mov") == 0) {
-			if (MMFileFormatIsValidMP4 (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_QT;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_QT;
-			goto PROBE_PROPER_FILE_TYPE;
-		} else if (strcasecmp (extansion_name, "flac") == 0) {
-			if (MMFileFormatIsValidFLAC (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_FLAC;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_FLAC;
-			goto PROBE_PROPER_FILE_TYPE;
-		} else if (strcasecmp (extansion_name, "flv") == 0) {
-			if (MMFileFormatIsValidFLV (*urifilename)) {
-				*formatEnum = MM_FILE_FORMAT_FLV;
-				return MMFILE_FORMAT_SUCCESS;
-			}
-			skip_index = MM_FILE_FORMAT_FLV;
-			goto PROBE_PROPER_FILE_TYPE;
-		} else {
-			debug_warning ("probe file type=%s\n", fileName);
-			skip_index = -1;
-			goto PROBE_PROPER_FILE_TYPE;
+			case MMFILE_EXT_FLV:
+				if (MMFileFormatIsValidFLV(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_FLV;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_FLV;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
+
+			case MMFILE_EXT_RM:
+			case MMFILE_EXT_RMVB:
+				if (MMFileFormatIsValidREAL(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_REAL;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_REAL;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
+
+			case MMFILE_EXT_M2TS:
+			case MMFILE_EXT_MTS:
+			case MMFILE_EXT_TP:
+			case MMFILE_EXT_TS:
+				if (MMFileFormatIsValidMPEGTS(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_M2TS;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_M2TS;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
+
+			case MMFILE_EXT_MPEG:
+				if (MMFileFormatIsValidMPEGPS(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_M2PS;
+					goto FILE_FORMAT_SUCCESS;
+				} else if (MMFileFormatIsValidMPEGVIDEO(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_M1VIDEO;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_M2PS;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
+
+			case MMFILE_EXT_AIF:
+			case MMFILE_EXT_AIFF:
+				*formatEnum = MM_FILE_FORMAT_AIFF;
+				goto FILE_FORMAT_SUCCESS;
+				break;
+
+			default:
+				debug_warning("probe file type=%s\n", fileName);
+				skip_index = -1;
+				goto PROBE_PROPER_FILE_TYPE;
+				break;
 		}
 	} else if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) {
-		char tempURIBuffer[MMFILE_URI_MAX_LEN] = {0,};
+		char tempURIBuffer[MMFILE_URI_MAX_LEN] = {0, };
 
-		sprintf (tempURIBuffer, "%s%u:%u", MMFILE_MEM_URI, (unsigned int)fileSrc->memory.ptr, fileSrc->memory.size);
-		*urifilename = mmfile_strdup (tempURIBuffer);
+		snprintf(tempURIBuffer, MMFILE_URI_MAX_LEN, "%s%u:%u", MMFILE_MEM_URI, (unsigned int)fileSrc->memory.ptr, fileSrc->memory.size);
+		*urifilename = mmfile_strdup(tempURIBuffer);
 		if (!*urifilename) {
-			debug_error ("error: uri is NULL\n");
-			return MMFILE_FORMAT_FAIL;
+			debug_error("error: uri is NULL\n");
+			goto FILE_FORMAT_FAIL;
 		}
 
-		#ifdef __MMFILE_TEST_MODE__
-		debug_msg ("uri: %s\n", *urifilename);
-		#endif
+		ret = mmfile_open(&fp, *urifilename, MMFILE_RDONLY);
+
+		if (ret == MMFILE_IO_FAILED) {
+			debug_error("error: mmfile_open\n");
+			goto FILE_FORMAT_FAIL;
+		}
+
+#ifdef __MMFILE_TEST_MODE__
+		debug_msg("uri: %s\n", *urifilename);
+#endif
 
 		switch (fileSrc->memory.format) {
 			case MM_FILE_FORMAT_3GP: {
-				if (MMFileFormatIsValidMP4 (*urifilename)) {
+				if (MMFileFormatIsValidMP4(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_3GP;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_3GP;
 				goto PROBE_PROPER_FILE_TYPE;
@@ -400,9 +507,9 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 			}
 
 			case MM_FILE_FORMAT_MP4: {
-				if (MMFileFormatIsValidMP4 (*urifilename)) {
+				if (MMFileFormatIsValidMP4(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_MP4;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_MP4;
 				goto PROBE_PROPER_FILE_TYPE;
@@ -410,9 +517,9 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 			}
 
 			case MM_FILE_FORMAT_AMR: {
-				if (MMFileFormatIsValidAMR (*urifilename)) {
+				if (MMFileFormatIsValidAMR(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_AMR;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_AMR;
 				goto PROBE_PROPER_FILE_TYPE;
@@ -420,9 +527,9 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 			}
 
 			case MM_FILE_FORMAT_WAV: {
-				if (MMFileFormatIsValidWAV (*urifilename)) {
+				if (MMFileFormatIsValidWAV(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_WAV;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_WAV;
 				goto PROBE_PROPER_FILE_TYPE;
@@ -430,9 +537,9 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 			}
 
 			case MM_FILE_FORMAT_MID: {
-				if (MMFileFormatIsValidMID (*urifilename)) {
+				if (MMFileFormatIsValidMID(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_MID;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_MID;
 				goto PROBE_PROPER_FILE_TYPE;
@@ -440,9 +547,9 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 			}
 
 			case MM_FILE_FORMAT_MP3: {
-				if (MMFileFormatIsValidMP3 (*urifilename,5)) {
+				if (MMFileFormatIsValidMP3(fp, NULL, 5)) {
 					*formatEnum = MM_FILE_FORMAT_MP3;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_MP3;
 				goto PROBE_PROPER_FILE_TYPE;
@@ -450,9 +557,9 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 			}
 
 			case MM_FILE_FORMAT_AAC: {
-				if (MMFileFormatIsValidAAC (*urifilename)) {
+				if (MMFileFormatIsValidAAC(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_AAC;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_AAC;
 				goto PROBE_PROPER_FILE_TYPE;
@@ -460,9 +567,9 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 			}
 
 			case MM_FILE_FORMAT_MMF: {
-				if (MMFileFormatIsValidMMF (*urifilename)) {
+				if (MMFileFormatIsValidMMF(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_MMF;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_MMF;
 				goto PROBE_PROPER_FILE_TYPE;
@@ -470,9 +577,9 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 			}
 
 			case MM_FILE_FORMAT_IMELODY: {
-				if (MMFileFormatIsValidIMY (*urifilename)) {
+				if (MMFileFormatIsValidIMY(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_IMELODY;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_IMELODY;
 				goto PROBE_PROPER_FILE_TYPE;
@@ -480,9 +587,9 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 			}
 
 			case MM_FILE_FORMAT_AVI: {
-				if (MMFileFormatIsValidAVI (*urifilename)) {
+				if (MMFileFormatIsValidAVI(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_AVI;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_AVI;
 				goto PROBE_PROPER_FILE_TYPE;
@@ -490,9 +597,9 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 			}
 
 			case MM_FILE_FORMAT_DIVX: {
-				if (MMFileFormatIsValidAVI (*urifilename)) {
+				if (MMFileFormatIsValidAVI(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_DIVX;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_DIVX;
 				goto PROBE_PROPER_FILE_TYPE;
@@ -500,9 +607,9 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 			}
 
 			case MM_FILE_FORMAT_ASF: {
-				if (MMFileFormatIsValidASF (*urifilename)) {
+				if (MMFileFormatIsValidASF(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_ASF;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_ASF;
 				goto PROBE_PROPER_FILE_TYPE;
@@ -510,9 +617,9 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 			}
 
 			case MM_FILE_FORMAT_WMA: {
-				if (MMFileFormatIsValidWMA (*urifilename)) {
+				if (MMFileFormatIsValidWMA(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_WMA;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_WMA;
 				goto PROBE_PROPER_FILE_TYPE;
@@ -520,9 +627,9 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 			}
 
 			case MM_FILE_FORMAT_WMV: {
-				if (MMFileFormatIsValidWMV (*urifilename)) {
+				if (MMFileFormatIsValidWMV(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_WMV;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_WMV;
 				goto PROBE_PROPER_FILE_TYPE;
@@ -530,60 +637,105 @@ _PreprocessFile (MMFileSourceType *fileSrc, char **urifilename, int *formatEnum,
 			}
 
 			case MM_FILE_FORMAT_OGG: {
-				if (MMFileFormatIsValidOGG (*urifilename)) {
+				if (MMFileFormatIsValidOGG(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_OGG;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_OGG;
 				goto PROBE_PROPER_FILE_TYPE;
 			}
 
 			case MM_FILE_FORMAT_MATROSKA: {
-				if (MMFileFormatIsValidMatroska (*urifilename)) {
+				if (MMFileFormatIsValidMatroska(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_MATROSKA;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_MATROSKA;
 				goto PROBE_PROPER_FILE_TYPE;
 			}
 
 			case MM_FILE_FORMAT_QT: {
-				if (MMFileFormatIsValidMP4 (*urifilename)) {
+				if (MMFileFormatIsValidMP4(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_QT;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_QT;
 				goto PROBE_PROPER_FILE_TYPE;
 			}
 
 			case MM_FILE_FORMAT_FLAC: {
-				if (MMFileFormatIsValidFLAC (*urifilename)) {
+				if (MMFileFormatIsValidFLAC(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_FLAC;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_FLAC;
 				goto PROBE_PROPER_FILE_TYPE;
 			}
 
 			case MM_FILE_FORMAT_FLV: {
-				if (MMFileFormatIsValidFLV (*urifilename)) {
+				if (MMFileFormatIsValidFLV(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_FLV;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				skip_index = MM_FILE_FORMAT_FLV;
 				goto PROBE_PROPER_FILE_TYPE;
 			}
 
+			case MM_FILE_FORMAT_REAL: {
+				if (MMFileFormatIsValidREAL(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_REAL;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_REAL;
+				goto PROBE_PROPER_FILE_TYPE;
+			}
+
+			case MM_FILE_FORMAT_M2TS: {
+				if (MMFileFormatIsValidMPEGTS(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_M2TS;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_M2TS;
+				goto PROBE_PROPER_FILE_TYPE;
+			}
+
+			case MM_FILE_FORMAT_M2PS: {
+				if (MMFileFormatIsValidMPEGPS(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_M2PS;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_M2PS;
+				goto PROBE_PROPER_FILE_TYPE;
+			}
+
+			case MM_FILE_FORMAT_M1AUDIO: {
+				if (MMFileFormatIsValidMPEGAUDIO(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_M1AUDIO;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_M1AUDIO;
+				goto PROBE_PROPER_FILE_TYPE;
+			}
+
+			case MM_FILE_FORMAT_M1VIDEO: {
+				if (MMFileFormatIsValidMPEGVIDEO(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_M1VIDEO;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				skip_index = MM_FILE_FORMAT_M1VIDEO;
+				goto PROBE_PROPER_FILE_TYPE;
+			}
+
 			default: {
-				debug_warning ("probe fileformat type=%d (%d: autoscan)\n", fileSrc->memory.format, MM_FILE_FORMAT_INVALID);
+				debug_warning("probe fileformat type=%d (%d: autoscan)\n", fileSrc->memory.format, MM_FILE_FORMAT_INVALID);
 				skip_index = -1;
 				goto PROBE_PROPER_FILE_TYPE;
 				break;
 			}
 		}
 	} else {
-		debug_error ("error: invaild input type[memory|file]\n");
-		return MMFILE_FORMAT_FAIL;
+		debug_error("error: invaild input type[memory|file]\n");
+		goto FILE_FORMAT_FAIL;
 	}
 
 PROBE_PROPER_FILE_TYPE:
@@ -591,9 +743,9 @@ PROBE_PROPER_FILE_TYPE:
 		if (index == skip_index)
 			continue;
 
-		#ifdef __MMFILE_TEST_MODE__
-		debug_msg ("search index = [%d]\n", index);
-		#endif
+#ifdef __MMFILE_TEST_MODE__
+		debug_msg("search index = [%d]\n", index);
+#endif
 
 		switch (index) {
 			case MM_FILE_FORMAT_QT:
@@ -602,10 +754,10 @@ PROBE_PROPER_FILE_TYPE:
 				if (skip_index == MM_FILE_FORMAT_QT || skip_index == MM_FILE_FORMAT_3GP || skip_index == MM_FILE_FORMAT_MP4)
 					break;
 
-				if (MMFileFormatIsValidMP4 (*urifilename)) {
+				if (MMFileFormatIsValidMP4(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_3GP;
 					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_3GP;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				break;
 			}
@@ -616,10 +768,10 @@ PROBE_PROPER_FILE_TYPE:
 				if (skip_index == MM_FILE_FORMAT_ASF || skip_index == MM_FILE_FORMAT_WMA || skip_index == MM_FILE_FORMAT_WMV)
 					break;
 
-				if (MMFileFormatIsValidASF (*urifilename)) {
+				if (MMFileFormatIsValidASF(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_ASF;
 					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_ASF;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				break;
 			}
@@ -629,140 +781,194 @@ PROBE_PROPER_FILE_TYPE:
 				if (skip_index == MM_FILE_FORMAT_DIVX || skip_index == MM_FILE_FORMAT_AVI)
 					break;
 
-				if (MMFileFormatIsValidAVI(*urifilename)) {
+				if (MMFileFormatIsValidAVI(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_AVI;
 					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_AVI;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				break;
 			}
 
 			case MM_FILE_FORMAT_OGG: {
-				if (MMFileFormatIsValidOGG (*urifilename)) {
+				if (MMFileFormatIsValidOGG(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_OGG;
 					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_OGG;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				break;
 			}
 
 			case MM_FILE_FORMAT_AMR: {
-				if (MMFileFormatIsValidAMR (*urifilename)) {
+				if (MMFileFormatIsValidAMR(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_AMR;
 					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_AMR;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				break;
 			}
 
 			case MM_FILE_FORMAT_AAC: {
-				if (MMFileFormatIsValidAAC (*urifilename)) {
+				if (MMFileFormatIsValidAAC(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_AAC;
 					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_AAC;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				break;
 			}
 
 			case MM_FILE_FORMAT_MP3: {
-				if (MMFileFormatIsValidMP3 (*urifilename,50)) {
+				if (MMFileFormatIsValidMP3(fp, NULL, 50)) {
 					*formatEnum = MM_FILE_FORMAT_MP3;
 					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_MP3;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				break;
 			}
 
 			case MM_FILE_FORMAT_WAV: {
-				if (MMFileFormatIsValidWAV (*urifilename)) {
+				if (MMFileFormatIsValidWAV(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_WAV;
 					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_WAV;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				break;
 			}
 
 			case MM_FILE_FORMAT_MID: {
-				if (MMFileFormatIsValidMID (*urifilename)) {
+				if (MMFileFormatIsValidMID(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_MID;
 					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_MID;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				break;
 			}
 
 			case MM_FILE_FORMAT_MMF: {
-				if (MMFileFormatIsValidMMF (*urifilename)) {
+				if (MMFileFormatIsValidMMF(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_MMF;
 					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_MMF;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				break;
 			}
 
 			case MM_FILE_FORMAT_IMELODY: {
-				if (MMFileFormatIsValidIMY (*urifilename)) {
+				if (MMFileFormatIsValidIMY(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_IMELODY;
 					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_IMELODY;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				break;
 			}
 
 			case MM_FILE_FORMAT_MATROSKA: {
-				if (MMFileFormatIsValidMatroska (*urifilename)) {
+				if (MMFileFormatIsValidMatroska(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_MATROSKA;
 					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_MATROSKA;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				break;
 			}
 
 			case MM_FILE_FORMAT_FLAC: {
-				if (MMFileFormatIsValidFLAC (*urifilename)) {
+				if (MMFileFormatIsValidFLAC(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_FLAC;
 					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_FLAC;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				break;
 			}
 
 			case MM_FILE_FORMAT_FLV: {
-				if (MMFileFormatIsValidFLV (*urifilename)) {
+				if (MMFileFormatIsValidFLV(fp, NULL)) {
 					*formatEnum = MM_FILE_FORMAT_FLV;
 					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_FLV;
-					return MMFILE_FORMAT_SUCCESS;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				break;
+			}
+
+			case MM_FILE_FORMAT_REAL: {
+				if (MMFileFormatIsValidREAL(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_REAL;
+					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_REAL;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				break;
+			}
+
+			case MM_FILE_FORMAT_M2TS: {
+				if (MMFileFormatIsValidMPEGTS(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_M2TS;
+					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_M2TS;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				break;
+			}
+
+			case MM_FILE_FORMAT_M2PS: {
+				if (MMFileFormatIsValidMPEGPS(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_M2PS;
+					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_M2PS;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				break;
+			}
+
+			case MM_FILE_FORMAT_M1AUDIO: {
+				if (MMFileFormatIsValidMPEGAUDIO(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_M1AUDIO;
+					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_M1AUDIO;
+					goto FILE_FORMAT_SUCCESS;
+				}
+				break;
+			}
+
+			case MM_FILE_FORMAT_M1VIDEO: {
+				if (MMFileFormatIsValidMPEGVIDEO(fp, NULL)) {
+					*formatEnum = MM_FILE_FORMAT_M1VIDEO;
+					if (fileSrc->type == MM_FILE_SRC_TYPE_MEMORY) fileSrc->memory.format = MM_FILE_FORMAT_M1VIDEO;
+					goto FILE_FORMAT_SUCCESS;
 				}
 				break;
 			}
 
 			/* not supported file */
 			case MM_FILE_FORMAT_NUT:
-			case MM_FILE_FORMAT_REAL:
 			case MM_FILE_FORMAT_AIFF:
 			case MM_FILE_FORMAT_AU:
 			case MM_FILE_FORMAT_VOB:
 			case MM_FILE_FORMAT_JPG:
-				break;
 			default: {
-				debug_error ("error: invaild format enum[%d]\n", index);
+				debug_error("error: invaild format enum[%d]\n", index);
 				break;
 			}
 		}
 	}
 
+FILE_FORMAT_FAIL:
 	if (index == MM_FILE_FORMAT_NUM)
 		debug_error("Can't probe file type\n");
 
 	*formatEnum = -1;
+
+	if (fp)
+		mmfile_close(fp);
+
 	return MMFILE_FORMAT_FAIL;
 
+
+FILE_FORMAT_SUCCESS:
+	if (fp)
+		mmfile_close(fp);
+
+	return MMFILE_FORMAT_SUCCESS;
 }
 
-static int _mmfile_format_close (MMFileFormatContext *formatContext, bool clean_all)
+static int _mmfile_format_close(MMFileFormatContext *formatContext, bool clean_all)
 {
 	if (NULL == formatContext) {
-		debug_error ("error: invalid params\n");
+		debug_error("error: invalid params\n");
 		return MMFILE_FORMAT_FAIL;
 	}
 
@@ -774,33 +980,33 @@ static int _mmfile_format_close (MMFileFormatContext *formatContext, bool clean_
 	_CleanupFrameContext(formatContext, clean_all);
 
 	if (formatContext)
-		mmfile_free (formatContext);
+		mmfile_free(formatContext);
 
 	return MMFILE_FORMAT_SUCCESS;
 }
 
 
 EXPORT_API
-int mmfile_format_open (MMFileFormatContext **formatContext, MMFileSourceType *fileSrc)
+int mmfile_format_open(MMFileFormatContext **formatContext, MMFileSourceType *fileSrc)
 {
 	int index = 0;
 	int ret = 0;
 	MMFileFormatContext *formatObject = NULL;
 
 	if (NULL == fileSrc) {
-		debug_error ("error: invalid params\n");
+		debug_error("error: invalid params\n");
 		return MMFILE_FORMAT_FAIL;
 	}
 
 	/* create formatContext object */
-	formatObject = mmfile_malloc (sizeof (MMFileFormatContext));
+	formatObject = mmfile_malloc(sizeof(MMFileFormatContext));
 	if (NULL == formatObject) {
-		debug_error ("error: mmfile_malloc fail for formatObject\n");
+		debug_error("error: mmfile_malloc fail for formatObject\n");
 		*formatContext = NULL;
 		return MMFILE_FORMAT_FAIL;
 	}
 
-	memset (formatObject, 0x00, sizeof (MMFileFormatContext));
+	memset(formatObject, 0x00, sizeof(MMFileFormatContext));
 
 	mmfile_register_io_all();
 
@@ -812,9 +1018,9 @@ int mmfile_format_open (MMFileFormatContext **formatContext, MMFileSourceType *f
 	/**
 	 * Format detect and validation check.
 	 */
-	ret = _PreprocessFile (fileSrc, &formatObject->uriFileName,  &formatObject->formatType, &formatObject->isdrm);
+	ret = _PreprocessFile(fileSrc, &formatObject->uriFileName,  &formatObject->formatType);
 	if (MMFILE_FORMAT_SUCCESS != ret) {
-		debug_error ("error: _PreprocessFile fail\n");
+		debug_error("error: _PreprocessFile fail\n");
 		ret = MMFILE_FORMAT_FAIL;
 		goto exception;
 	}
@@ -825,16 +1031,16 @@ int mmfile_format_open (MMFileFormatContext **formatContext, MMFileSourceType *f
 	 * Open format function.
 	 */
 	if (NULL == MMFileOpenFunc[formatObject->formatType]) {
-		debug_error ("error: Not implemented \n");
+		debug_error("error: Not implemented \n");
 		ret = MMFILE_FORMAT_FAIL;
 		goto find_valid_handler;
 	}
 
-	ret = MMFileOpenFunc[formatObject->formatType] (formatObject);
+	ret = MMFileOpenFunc[formatObject->formatType](formatObject);
 	if (MMFILE_FORMAT_FAIL == ret) {
-		debug_error ("error: Try other formats\n");
+		debug_error("error: Try other formats\n");
 		ret = MMFILE_FORMAT_FAIL;
-//		goto find_valid_handler;
+/*		goto find_valid_handler; */
 		goto exception;
 	}
 
@@ -844,9 +1050,9 @@ int mmfile_format_open (MMFileFormatContext **formatContext, MMFileSourceType *f
 find_valid_handler:
 	formatObject->pre_checked = 0;	/*do check file format*/
 
-	for (index = 0; index < MM_FILE_FORMAT_NUM+1; index++) {
+	for (index = 0; index < MM_FILE_FORMAT_NUM + 1; index++) {
 		if (NULL == MMFileOpenFunc[index]) {
-			debug_error ("error: Not implemented \n");
+			debug_error("error: Not implemented \n");
 			ret = MMFILE_FORMAT_FAIL;
 			continue;
 		}
@@ -854,9 +1060,9 @@ find_valid_handler:
 		if (formatObject->formatType == index)
 			continue;
 
-		ret = MMFileOpenFunc[index] (formatObject);
+		ret = MMFileOpenFunc[index](formatObject);
 		if (MMFILE_FORMAT_FAIL == ret) {
-//			_CleanupFrameContext (formatObject, true);
+/*			_CleanupFrameContext(formatObject, true); */
 			continue;
 		}
 
@@ -866,8 +1072,8 @@ find_valid_handler:
 	formatObject->formatType = index;
 
 	if (index == MM_FILE_FORMAT_NUM + 1 && MMFILE_FORMAT_FAIL == ret) {
-		debug_error ("can't find file format handler\n");
-		_CleanupFrameContext (formatObject, true);
+		debug_error("can't find file format handler\n");
+		_CleanupFrameContext(formatObject, true);
 		ret = MMFILE_FORMAT_FAIL;
 		goto exception;
 	}
@@ -878,48 +1084,48 @@ find_valid_handler:
 	return MMFILE_FORMAT_SUCCESS;
 
 exception:
-	_mmfile_format_close (formatObject, true);
+	_mmfile_format_close(formatObject, true);
 	*formatContext = NULL;
 
 	return ret;
 }
 
 EXPORT_API
-int mmfile_format_read_stream (MMFileFormatContext *formatContext)
+int mmfile_format_read_stream(MMFileFormatContext *formatContext)
 {
 	if (NULL == formatContext || NULL == formatContext->ReadStream) {
-		debug_error ("error: invalid params\n");
+		debug_error("error: invalid params\n");
 		return MMFILE_FORMAT_FAIL;
 	}
 
-	return formatContext->ReadStream (formatContext);
+	return formatContext->ReadStream(formatContext);
 }
 
 EXPORT_API
-int mmfile_format_read_frame (MMFileFormatContext *formatContext, unsigned int timestamp, MMFileFormatFrame *frame)
+int mmfile_format_read_frame(MMFileFormatContext *formatContext, unsigned int timestamp, MMFileFormatFrame *frame)
 {
-	if (NULL == formatContext || NULL == frame || NULL == formatContext->ReadFrame ) {
-		debug_error ("error: invalid params\n");
+	if (NULL == formatContext || NULL == frame || NULL == formatContext->ReadFrame) {
+		debug_error("error: invalid params\n");
 		return MMFILE_FORMAT_FAIL;
 	}
 
-	return formatContext->ReadFrame (formatContext, timestamp, frame);
+	return formatContext->ReadFrame(formatContext, timestamp, frame);
 }
 
 EXPORT_API
-int mmfile_format_read_tag (MMFileFormatContext *formatContext)
+int mmfile_format_read_tag(MMFileFormatContext *formatContext)
 {
 	if (NULL == formatContext || NULL == formatContext->ReadTag) {
-		debug_error ("error: invalid params\n");
+		debug_error("error: invalid params\n");
 		return MMFILE_FORMAT_FAIL;
 	}
 
-	return formatContext->ReadTag (formatContext);
+	return formatContext->ReadTag(formatContext);
 }
 
 
 EXPORT_API
-int mmfile_format_close (MMFileFormatContext *formatContext)
+int mmfile_format_close(MMFileFormatContext *formatContext)
 {
 	return _mmfile_format_close(formatContext, false);
 }

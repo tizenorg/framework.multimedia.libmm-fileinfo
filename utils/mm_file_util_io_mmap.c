@@ -19,7 +19,7 @@
  *
  */
 
- 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,7 +30,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "mm_debug.h"
+#include "mm_file_debug.h"
 #include "mm_file_utils.h"
 
 
@@ -42,287 +42,248 @@ typedef struct {
 	int	state;
 } MMFMMapIOHandle;
 
-static int mmf_mmap_open (MMFileIOHandle *handle, const char *filename, int flags)
+static int mmf_mmap_open(MMFileIOHandle *handle, const char *filename, int flags)
 {
-    MMFMMapIOHandle *mmapHandle = NULL;
-    struct stat finfo = {0, };
-    int access = 0;
-    
-    if (!handle || !filename || !handle->iofunc || !handle->iofunc->handleName)
-    {
-        debug_error ("invalid param\n");
-        return MMFILE_IO_FAILED;        
-    }
+	MMFMMapIOHandle *mmapHandle = NULL;
+	struct stat finfo = {0, };
+	int access = 0;
 
-    filename += strlen(handle->iofunc->handleName) + 3; /* :// */
+	if (!handle || !filename || !handle->iofunc || !handle->iofunc->handleName) {
+		debug_error("invalid param\n");
+		return MMFILE_IO_FAILED;
+	}
 
-    memset (&finfo, 0x00, sizeof (struct stat));
+	filename += strlen(handle->iofunc->handleName) + 3; /* :// */
 
-    mmapHandle = mmfile_malloc (sizeof(MMFMMapIOHandle));
-    if (!mmapHandle)
-    {
-        debug_error ("error: mmfile_malloc mmapHandle\n");
-        return MMFILE_IO_FAILED;        
-    }
+	memset(&finfo, 0x00, sizeof(struct stat));
 
-    if (flags & MMFILE_RDWR)
-    {
-        access = O_CREAT | O_TRUNC | O_RDWR;
-    } 
-    else if (flags & MMFILE_WRONLY) 
-    {
-        access = O_CREAT | O_TRUNC | O_WRONLY;
-    } 
-    else 
-    {
-        access = O_RDONLY;
-    }
-    
+	mmapHandle = mmfile_malloc(sizeof(MMFMMapIOHandle));
+	if (!mmapHandle) {
+		debug_error("error: mmfile_malloc mmapHandle\n");
+		return MMFILE_IO_FAILED;
+	}
+
+	if (flags & MMFILE_RDWR) {
+		access = O_CREAT | O_TRUNC | O_RDWR;
+	} else if (flags & MMFILE_WRONLY) {
+		access = O_CREAT | O_TRUNC | O_WRONLY;
+	} else {
+		access = O_RDONLY;
+	}
+
 #ifdef O_BINARY
-    access |= O_BINARY;
+	access |= O_BINARY;
 #endif
 
-    mmapHandle->fd = open (filename, access, 0666);
-    if (mmapHandle->fd < 0)
-    {
-        debug_error ("error: open error: %s\n", filename);
-        goto exception;
-    }
+	mmapHandle->fd = open(filename, access, 0666);
+	if (mmapHandle->fd < 0) {
+		debug_error("error: open error: %s\n", filename);
+		goto exception;
+	}
 
-    if (fstat (mmapHandle->fd, &finfo) == -1) 
-    {
-        debug_error ("error: fstat\n");
-        goto exception;
-    }
+	if (fstat(mmapHandle->fd, &finfo) == -1) {
+		debug_error("error: fstat\n");
+		goto exception;
+	}
 
-    if (!S_ISREG(finfo.st_mode))
-    {
-        debug_error ("error: it is not regular file\n");
-        goto exception;
-    }
+	if (!S_ISREG(finfo.st_mode)) {
+		debug_error("error: it is not regular file\n");
+		goto exception;
+	}
 
-    mmapHandle->size = finfo.st_size;
-    mmapHandle->offset = 0;
-    mmapHandle->state = 0;
+	mmapHandle->size = finfo.st_size;
+	mmapHandle->offset = 0;
+	mmapHandle->state = 0;
 
-    if (flags & MMFILE_RDWR)
-    {
-        //mmapHandle->ptr = mmap64 (0, mmapHandle->size, PROT_WRITE | PROT_READ, MAP_SHARED, mmapHandle->fd, 0);
-        mmapHandle->ptr = mmap (0, mmapHandle->size, PROT_WRITE | PROT_READ, MAP_SHARED, mmapHandle->fd, 0);
-    } 
-    else if (flags & MMFILE_WRONLY) 
-    {
-        //mmapHandle->ptr = mmap64 (0, mmapHandle->size, PROT_WRITE, MAP_SHARED, mmapHandle->fd, 0);
-        mmapHandle->ptr = mmap (0, mmapHandle->size, PROT_WRITE, MAP_SHARED, mmapHandle->fd, 0);
-    } 
-    else 
-    {
-        //mmapHandle->ptr = mmap64 (0, mmapHandle->size, PROT_READ, MAP_SHARED, mmapHandle->fd, 0);
-        mmapHandle->ptr = mmap (0, mmapHandle->size, PROT_READ, MAP_SHARED, mmapHandle->fd, 0);
-    }
-    
-    if (mmapHandle->ptr == (void*)-1)
-    {
-        debug_error ("error: mmap\n");
-        mmapHandle->ptr = NULL;
-        goto exception;
-    }
+	if (flags & MMFILE_RDWR) {
+		/*mmapHandle->ptr = mmap64(0, mmapHandle->size, PROT_WRITE | PROT_READ, MAP_SHARED, mmapHandle->fd, 0); */
+		mmapHandle->ptr = mmap(0, mmapHandle->size, PROT_WRITE | PROT_READ, MAP_SHARED, mmapHandle->fd, 0);
+	} else if (flags & MMFILE_WRONLY) {
+		/*mmapHandle->ptr = mmap64(0, mmapHandle->size, PROT_WRITE, MAP_SHARED, mmapHandle->fd, 0); */
+		mmapHandle->ptr = mmap(0, mmapHandle->size, PROT_WRITE, MAP_SHARED, mmapHandle->fd, 0);
+	} else {
+		/*mmapHandle->ptr = mmap64(0, mmapHandle->size, PROT_READ, MAP_SHARED, mmapHandle->fd, 0); */
+		mmapHandle->ptr = mmap(0, mmapHandle->size, PROT_READ, MAP_SHARED, mmapHandle->fd, 0);
+	}
 
-    handle->privateData = (void*) mmapHandle;
+	if (mmapHandle->ptr == (void *)-1) {
+		debug_error("error: mmap\n");
+		mmapHandle->ptr = NULL;
+		goto exception;
+	}
 
-    return MMFILE_IO_SUCCESS;
+	handle->privateData = (void *) mmapHandle;
+
+	return MMFILE_IO_SUCCESS;
 
 exception:
-    if (mmapHandle)
-    {
-        if (mmapHandle->ptr)
-        {
-            munmap (mmapHandle->ptr, mmapHandle->size);
-        }
+	if (mmapHandle) {
+		if (mmapHandle->ptr) {
+			munmap(mmapHandle->ptr, mmapHandle->size);
+		}
 
-        if (mmapHandle->fd > 2)
-        {
-            close (mmapHandle->fd);
-        }
+		if (mmapHandle->fd > 2) {
+			close(mmapHandle->fd);
+		}
 
-        mmfile_free (mmapHandle);
-        handle->privateData = NULL;
-    }
-    
-    return MMFILE_IO_FAILED;
+		mmfile_free(mmapHandle);
+		handle->privateData = NULL;
+	}
+
+	return MMFILE_IO_FAILED;
 }
 
-static int mmf_mmap_read (MMFileIOHandle *h, unsigned char *buf, int size)
+static int mmf_mmap_read(MMFileIOHandle *h, unsigned char *buf, int size)
 {
-    MMFMMapIOHandle *mmapHandle = NULL;
-    const unsigned char *c = NULL;
-    int len = 0;
+	MMFMMapIOHandle *mmapHandle = NULL;
+	const unsigned char *c = NULL;
+	int len = 0;
 
-    if (!h || !h->privateData || !buf)
-    {
-        debug_error ("invalid para\n");
-        return MMFILE_IO_FAILED;
-    }
+	if (!h || !h->privateData || !buf) {
+		debug_error("invalid para\n");
+		return MMFILE_IO_FAILED;
+	}
 
-    mmapHandle = h->privateData;
+	mmapHandle = h->privateData;
 
-    c = mmapHandle->ptr + mmapHandle->offset;
+	c = mmapHandle->ptr + mmapHandle->offset;
 
-    if (mmapHandle->state != EOF)
-    {
-        len = size;
-        if (len + mmapHandle->offset > mmapHandle->size) 
-        {
-            len = mmapHandle->size - mmapHandle->offset;
-        }
-    }
-    else
-    {
-        return 0;
-    }
+	if (mmapHandle->state != EOF) {
+		len = size;
+		if (len + mmapHandle->offset > mmapHandle->size) {
+			len = mmapHandle->size - mmapHandle->offset;
+		}
+	} else {
+		return 0;
+	}
 
-    memcpy (buf, c, len);
-    
-    mmapHandle->offset += len;
+	memcpy(buf, c, len);
 
-    if ( mmapHandle->offset == mmapHandle->size) 
-    {
-        mmapHandle->state = EOF;
-    }
+	mmapHandle->offset += len;
 
-    return len;
+	if (mmapHandle->offset == mmapHandle->size) {
+		mmapHandle->state = EOF;
+	}
+
+	return len;
 }
 
-static int mmf_mmap_write (MMFileIOHandle *h, unsigned char *buf, int size)
+static int mmf_mmap_write(MMFileIOHandle *h, unsigned char *buf, int size)
 {
-    MMFMMapIOHandle *mmapHandle = NULL;
-    unsigned char *c = NULL;
-    int len = 0;
+	MMFMMapIOHandle *mmapHandle = NULL;
+	unsigned char *c = NULL;
+	int len = 0;
 
-    if (!h || !h->privateData || !buf)
-    {
-        debug_error ("invalid para\n");
-        return MMFILE_IO_FAILED;
-    }
+	if (!h || !h->privateData || !buf) {
+		debug_error("invalid para\n");
+		return MMFILE_IO_FAILED;
+	}
 
-    mmapHandle = h->privateData;
-    
-    c = mmapHandle->ptr + mmapHandle->offset;
+	mmapHandle = h->privateData;
 
-    if (mmapHandle->state != EOF)
-    {
-        len = size;
-        if (len + mmapHandle->offset > mmapHandle->size)
-        {
-            len = mmapHandle->size - mmapHandle->offset;
-        }
-    }
-    else
-    {
-        return 0;
-    }
+	c = mmapHandle->ptr + mmapHandle->offset;
 
-    memcpy (c, buf, len);
+	if (mmapHandle->state != EOF) {
+		len = size;
+		if (len + mmapHandle->offset > mmapHandle->size) {
+			len = mmapHandle->size - mmapHandle->offset;
+		}
+	} else {
+		return 0;
+	}
 
-    mmapHandle->offset += len;
+	memcpy(c, buf, len);
 
-    if ( mmapHandle->offset == mmapHandle->size) 
-    {
-        mmapHandle->state = EOF;
-    }
+	mmapHandle->offset += len;
 
-    return len;
+	if (mmapHandle->offset == mmapHandle->size) {
+		mmapHandle->state = EOF;
+	}
+
+	return len;
 }
 
 
-static long long mmf_mmap_seek (MMFileIOHandle *h, long long pos, int whence)
+static int64_t mmf_mmap_seek(MMFileIOHandle *h, int64_t pos, int whence)
 {
-    MMFMMapIOHandle *mmapHandle = NULL;
-    long tmp_offset = 0;
+	MMFMMapIOHandle *mmapHandle = NULL;
+	long tmp_offset = 0;
 
-    if (!h || !h->privateData)
-    {
-        debug_error ("invalid para\n");
-        return MMFILE_IO_FAILED;
-    }
+	if (!h || !h->privateData) {
+		debug_error("invalid para\n");
+		return MMFILE_IO_FAILED;
+	}
 
-    mmapHandle = h->privateData;
+	mmapHandle = h->privateData;
 
-    switch (whence) 
-    {
-        case SEEK_SET:
-            tmp_offset = 0 + pos;
-            break;
-        case SEEK_CUR:
-            tmp_offset = mmapHandle->offset + pos;
-            break;
-        case SEEK_END:
-            tmp_offset = mmapHandle->size + pos;
-            break;
-        default:
-            return MMFILE_IO_FAILED;
-    }
+	switch (whence) {
+		case SEEK_SET:
+			tmp_offset = 0 + pos;
+			break;
+		case SEEK_CUR:
+			tmp_offset = mmapHandle->offset + pos;
+			break;
+		case SEEK_END:
+			tmp_offset = mmapHandle->size + pos;
+			break;
+		default:
+			return MMFILE_IO_FAILED;
+	}
 
-    /*check validation*/
-    if (tmp_offset < 0)
-    {
-        debug_error ("invalid file offset\n");
-        return MMFILE_IO_FAILED;
-    }
+	/*check validation*/
+	if (tmp_offset < 0) {
+		debug_error("invalid file offset\n");
+		return MMFILE_IO_FAILED;
+	}
 
-    /*set */
-    mmapHandle->state = (tmp_offset >= mmapHandle->size) ? EOF : !EOF;
-    mmapHandle->offset = tmp_offset;
+	/*set */
+	mmapHandle->state = (tmp_offset >= mmapHandle->size) ? EOF : !EOF;
+	mmapHandle->offset = tmp_offset;
 
-    return mmapHandle->offset;
+	return mmapHandle->offset;
 }
 
 
-static long long mmf_mmap_tell (MMFileIOHandle *h)
+static long long mmf_mmap_tell(MMFileIOHandle *h)
 {
-    MMFMMapIOHandle *mmapHandle = NULL;
+	MMFMMapIOHandle *mmapHandle = NULL;
 
-    if (!h || !h->privateData)
-    {
-        debug_error ("invalid para\n");
-        return MMFILE_IO_FAILED;
-    }
+	if (!h || !h->privateData) {
+		debug_error("invalid para\n");
+		return MMFILE_IO_FAILED;
+	}
 
-    mmapHandle = h->privateData;
+	mmapHandle = h->privateData;
 
-    return mmapHandle->offset;
+	return mmapHandle->offset;
 }
 
-static int mmf_mmap_close (MMFileIOHandle *h)
+static int mmf_mmap_close(MMFileIOHandle *h)
 {
-    MMFMMapIOHandle *mmapHandle = NULL;
+	MMFMMapIOHandle *mmapHandle = NULL;
 
-    if (!h || !h->privateData)
-    {
-        debug_error ("invalid para\n");
-        return MMFILE_IO_FAILED;
-    }
+	if (!h || !h->privateData) {
+		debug_error("invalid para\n");
+		return MMFILE_IO_FAILED;
+	}
 
-    mmapHandle = h->privateData;
+	mmapHandle = h->privateData;
 
-    if (mmapHandle)
-    {
-        if (mmapHandle->ptr)
-        {
-            munmap (mmapHandle->ptr, mmapHandle->size);
-        }
+	if (mmapHandle) {
+		if (mmapHandle->ptr) {
+			munmap(mmapHandle->ptr, mmapHandle->size);
+		}
 
-        if (mmapHandle->fd > 2)
-        {
-    close (mmapHandle->fd);
-        }
+		if (mmapHandle->fd > 2) {
+			close(mmapHandle->fd);
+		}
 
-    mmfile_free (mmapHandle);
-    }
-    
-    h->privateData = NULL;
+		mmfile_free(mmapHandle);
+	}
 
-    return MMFILE_IO_SUCCESS;
+	h->privateData = NULL;
+
+	return MMFILE_IO_SUCCESS;
 }
 
 
@@ -333,5 +294,6 @@ MMFileIOFunc mmfile_mmap_io_handler = {
 	mmf_mmap_write,
 	mmf_mmap_seek,
 	mmf_mmap_tell,
-	mmf_mmap_close
+	mmf_mmap_close,
+	NULL
 };

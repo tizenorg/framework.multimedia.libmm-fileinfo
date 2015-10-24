@@ -41,10 +41,8 @@ libmmffile_la_LIBADD += $(top_builddir)/codecs/ffmpeg/libmmfile_codecs.la \
 						$(top_builddir)/formats/ffmpeg/libmmfile_formats.la
 endif
 
-
-libmmffile_la_CFLAGS += $(MMLOG_CFLAGS) -DMMF_LOG_OWNER=0x040 -DMMF_DEBUG_PREFIX=\"MMF-FILE\"
-libmmffile_la_LIBADD += $(MMLOG_LIBS)
-
+libmmffile_la_CFLAGS += $(DLOG_CFLAGS)
+libmmffile_la_LIBADD += $(DLOG_LIBS)
 
 pcfiles = mm-fileinfo.pc
 pkgconfigdir = $(libdir)/pkgconfig
